@@ -1,0 +1,19 @@
+{
+    "validateOption": 0,
+    "salesData":{
+        "salesItem":[],
+        "salesTotal":{},
+        "salesTender": [],
+        "staffCode": "TT",
+        "orgId": "000001",
+        "storeCode": "TTGZSH001",
+        "tillId": "01",
+        "workingDate": "2020-09-15",
+        "workingTime": "1029"
+    },
+    "enqProgram": "TTPOS",
+    "repositoryDatetime": "2020-09-15 10:29:07",
+    "enqStoreCode": "TTGZSH001",
+    "enqTillId": "01",
+    "enqStaffCode": "TT"
+}

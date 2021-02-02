@@ -1,0 +1,19 @@
+{
+    "validateOption": 0,
+    "salesData":{
+        "salesItem":[],
+        "salesTotal":{},
+        "salesTender": [],
+        "staffCode": "",
+        "orgId": "",
+        "storeCode": "",
+        "tillId": "",
+        "workingDate": "",
+        "workingTime": ""
+    },
+    "enqProgram": "",
+    "repositoryDatetime": "",
+    "enqStoreCode": "",
+    "enqTillId": "",
+    "enqStaffCode": ""
+}

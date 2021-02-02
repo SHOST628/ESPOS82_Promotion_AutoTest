@@ -1,0 +1,62 @@
+# -*- mode: python ; coding: utf-8 -*-
+
+block_cipher = None
+
+
+a = Analysis(['./run.py',
+              './con_requests/send_request.py',
+              './json_producer/assembler.py',
+              './json_producer/base_json_compare.py',
+              './json_producer/salesitem_producer.py',
+              './json_producer/salestotal_producer.py',
+              './param_parser/param_parser.py',
+              './testcases/demo_testcase.py',
+              './testcases/test_assertion.py',
+              './util/assertions.py',
+              './util/case_log.py',
+              './util/file.py',
+              './frozen_path.py',
+              './util/gen_report.py',
+              './util/HTMLTestRunner.py',
+              './util/logger.py',
+              './util/oracle.py',
+              './util/readconfig.py',
+              './util/wr_excel.py'
+             ],
+             pathex=['E:/PycharmProjects/ESPOS82_Promotion_AutoTest'],
+             binaries=[],
+             datas=[('./config', 'config'),
+                    ('./data', 'data'),
+                    ('./ico', 'ico'),
+                    ('./json_model', 'json_model'),
+                    ('./logs', 'logs'),
+                    ('./report', 'report')
+             ],
+             hiddenimports=[],
+             hookspath=[],
+             runtime_hooks=[],
+             excludes=[],
+             win_no_prefer_redirects=False,
+             win_private_assemblies=False,
+             cipher=block_cipher,
+             noarchive=False)
+pyz = PYZ(a.pure, a.zipped_data,
+             cipher=block_cipher)
+exe = EXE(pyz,
+          a.scripts,
+          [],
+          exclude_binaries=True,
+          name='run',
+          debug=False,
+          bootloader_ignore_signals=False,
+          strip=False,
+          upx=True,
+          console=True, icon='ico/bitbug_favicon.ico' )
+coll = COLLECT(exe,
+               a.binaries,
+               a.zipfiles,
+               a.datas,
+               strip=False,
+               upx=True,
+               upx_exclude=[],
+               name='run')
