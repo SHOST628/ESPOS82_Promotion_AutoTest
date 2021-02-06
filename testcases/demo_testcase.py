@@ -2,7 +2,7 @@ from util.ddt import ddt
 from util.ddt import data
 from util.ddt import unpack
 from util.oracle import oracle
-from util.logger import logger
+from util.mylogger import logger
 from util.readconfig import api_key
 from util.readconfig import api_url
 from util.readconfig import prom_param
@@ -21,10 +21,12 @@ from util.ddt import TestNameFormat
 from testcases.test_assertion import Checker
 import unittest
 import json
+import io
 
 
 testcase_id_sql = "select distinct testcaseid from testcase order by testcaseid"
 testcase_ids = oracle.select(testcase_id_sql)
+
 
 
 @ddt(testNameFormat=TestNameFormat.INDEX_ONLY)

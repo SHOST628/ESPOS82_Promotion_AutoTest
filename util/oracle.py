@@ -1,5 +1,5 @@
 from cx_Oracle import ProgrammingError
-from util.logger import logger
+from util.mylogger import logger
 from util.readconfig import db_url
 from util.readconfig import db_type
 import cx_Oracle

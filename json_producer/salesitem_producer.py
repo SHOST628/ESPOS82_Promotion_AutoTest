@@ -1,5 +1,5 @@
 from util.oracle import oracle
-from util.logger import logger
+from util.mylogger import logger
 from util.readconfig import invt_type, price_mode, disc_mode, disc_value, itemlot_num
 import re
 

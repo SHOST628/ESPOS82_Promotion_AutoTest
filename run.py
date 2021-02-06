@@ -1,7 +1,7 @@
 from util.HTMLTestRunner import HTMLTestRunner
 from testcases.demo_testcase import DemoTestCase
 from util.readconfig import report_path
-from util.logger import logger
+from util.mylogger import logger
 from frozen_path import cur_path
 from util.file import mkdir
 import unittest

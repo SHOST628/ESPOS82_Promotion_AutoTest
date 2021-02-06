@@ -13,7 +13,7 @@ from param_parser.param_parser import to_dict
 from param_parser.param_parser import get_param_to_dict
 from param_parser.param_parser import REQUEST
 from json import dumps as json_dumps
-from util.logger import logger
+from util.mylogger import logger
 
 
 class Units:
@@ -227,6 +227,6 @@ class Assembler:
             func = getattr(self.unit, param)
             self_json = func(self_json)
         self_json = json_dumps(self_json, indent=4)
-        logger.info('generate request json: \n {}'.format(self_json))
+        logger.info('Generate request json: \n {}'.format(self_json))
         return self_json
 

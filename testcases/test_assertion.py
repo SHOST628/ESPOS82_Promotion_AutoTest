@@ -5,7 +5,7 @@ from param_parser.param_parser import to_dict
 from param_parser.param_parser import get_param_to_dict
 from param_parser.param_parser import RESPONSE
 from param_parser.param_parser import REQUEST
-from util.logger import logger
+from util.mylogger import logger
 import json
 
 

@@ -62,7 +62,9 @@ email_psw = config.get("Mail", "Psw")
 Receivers = config.get("Mail", "Receivers")
 
 # Log
+log_file = config.get('Log', 'LogFile')
 debug_level = config.get('Log', 'DebugLevel')
+
 
 
 

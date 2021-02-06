@@ -103,6 +103,7 @@ import datetime
 import sys
 import io
 import time
+import logging
 import unittest
 from xml.sax import saxutils
 
@@ -642,6 +643,8 @@ class _TestResult(TestResult):
         # )
         self.result = []
         self.subtestlist = []
+        # TODO add log from logger
+        self.logger = logging.getLogger('mylog')
 
     def startTest(self, test):
         TestResult.startTest(self, test)
@@ -654,6 +657,14 @@ class _TestResult(TestResult):
         self.stderr0 = sys.stderr
         sys.stdout = stdout_redirector
         sys.stderr = stderr_redirector
+        # TODO add logging output
+        self.log_cap = io.StringIO()
+        self.ch = logging.StreamHandler(self.log_cap)
+        self.ch.setLevel(logging.DEBUG)
+        # formatter = logging.Formatter('[%(levelname)s][%(asctime)s] [%(filename)s]->[%(funcName)s] line:%(lineno)d ---> %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(message)s')
+        self.ch.setFormatter(formatter)
+        self.logger.addHandler(self.ch)
 
     def complete_output(self):
         """
@@ -665,13 +676,16 @@ class _TestResult(TestResult):
             sys.stderr = self.stderr0
             self.stdout0 = None
             self.stderr0 = None
-        return self.outputBuffer.getvalue()
+        # TODO 解决自定义mylogger 以后无法输入log的问题
+        return self.outputBuffer.getvalue() +'\n'+self.log_cap.getvalue()
 
     def stopTest(self, test):
         # Usually one of addSuccess, addError or addFailure would have been called.
         # But there are some path in unittest that would bypass this.
         # We must disconnect stdout in stopTest(), which is guaranteed to be called.
         self.complete_output()
+        # TODO clear log handler
+        self.logger.removeHandler(self.ch)
 
     def addSuccess(self, test):
         if test not in self.subtestlist:

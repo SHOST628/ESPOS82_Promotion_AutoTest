@@ -1,4 +1,4 @@
-from util.logger import logger
+from util.mylogger import logger
 from util.oracle import oracle
 import re
 
