@@ -333,15 +333,6 @@ class Template_mixin(object):
     function close_shots(obj) {
         obj.parentElement.style.display="none";
     }
-    id
-    // 魔改 定义：复制文本内容
-    function copy(id) {
-            var e = document.getElementById(id);
-            // e.select(); // 选择对象
-            window.getSelection().selectAllChildren(e);
-            document.execCommand("Copy"); // 执行浏览器复制命令
-            // alert("复制成功！");
-    }
 
     --></script>
 
@@ -413,7 +404,7 @@ class Template_mixin(object):
     STYLESHEET_TMPL = """
 <style type="text/css" media="screen">
     body        { font-family: Microsoft YaHei,Consolas,arial,sans-serif; font-size: 100%; }
-    table       { font-size: 100%; } 
+    table       { font-size: 115%; } 
     pre         { white-space: pre-wrap;word-wrap: break-word; }
 
     /* -- heading ---------------------------------------------------------------------- */
@@ -493,7 +484,7 @@ class Template_mixin(object):
         margin-bottom: 1ex;
     }
     #result_table {
-        width: 100%;
+        width: 99%;
     }
     #header_row {
         font-weight: bold;
@@ -629,14 +620,14 @@ class Template_mixin(object):
 """  # variables: (style, desc, count, Pass, fail, skip,error, cid)
 
     REPORT_TEST_WITH_OUTPUT_TMPL = r"""
-    <tr id='%(tid)s' class='%(Class)s'>
-    <!-- 固定用例id列的宽度-->
-    <td width='500px' style='word-wrap:break-word;' class='%(style)s'><div class='testcase'>%(desc)s</div></td>
+<tr id='%(tid)s' class='%(Class)s'>
+    <td class='%(style)s'><div class='testcase'>%(desc)s</div></td>
     <td colspan='6' align='center'>
 
     <!--css div popup start-->
     <a class="popup_link" onfocus='this.blur();' style='color:#330033;' href="javascript:showTestDetail('div_%(tid)s')" >
         %(status)s</a>
+
     <div id='div_%(tid)s' class="popup_window">
         <pre>%(script)s</pre>
     </div>
@@ -648,12 +639,8 @@ class Template_mixin(object):
     <!--css div popup start-->
     <a class="popup_link" onfocus='this.blur();' style='color:#330033;' href="javascript:showTestDetail('div_%(tid)s_req')" >
         请求</a>
-    <!--  复制文本 -->
     <div id='div_%(tid)s_req' class="popup_window">
-        <p style="text-align: center">
-            <a class="popup_link" style='color:#330033;'  href="javascript:copy('div_%(tid)s_req_pre')" >复制</a>
-        </p>
-        <pre id='div_%(tid)s_req_pre'>%(req_script)s</pre>
+    <pre>%(req_script)s</pre>
     </div>
     <!--css div popup end-->
     </td>
@@ -665,7 +652,7 @@ class Template_mixin(object):
     <a class="popup_link" onfocus='this.blur();' style='color:#330033;' href="javascript:showTestDetail('div_%(tid)s_res')" >
         响应</a>
     <div id='div_%(tid)s_res' class="popup_window">
-        <pre>%(res_script)s</pre>
+    <pre>%(res_script)s</pre>
     <!--css div popup end-->
     </td>
     <!-- 修改结束-->
@@ -684,8 +671,7 @@ class Template_mixin(object):
 </tr>
 """  # variables: (tid, Class, style, desc, status，img)
 
-    # REPORT_TEST_OUTPUT_TMPL = r"""%(id)s: %(output)s"""  # variables: (id, output)
-    REPORT_TEST_OUTPUT_TMPL = r"""%(output)s"""  # variables: (output)
+    REPORT_TEST_OUTPUT_TMPL = r"""%(id)s: %(output)s"""  # variables: (id, output)
 
     # ------------------------------------------------------------------------
     # ENDING
@@ -1078,24 +1064,14 @@ class HTMLTestRunner(Template_mixin):
         tid = tid_flag + 't%s_%s' % (cid + 1, tid + 1)
         # tid = (n == 0 and 'p' or 'f') + 't%s.%s' % (cid + 1, tid + 1)
         name = t.id().split('.')[-1]
-        name = re.sub(r'.*_', '', name)
         doc = t.shortDescription() or ""
-        name = '<p style="text-align:center">CASEID:&nbsp&nbsp' + name + '</p>'
-        # desc = doc and ('%s: %s' % (name, doc)) or name
-        desc = doc and ('%s %s' % (name, doc)) or name
+        desc = doc and ('%s: %s' % (name, doc)) or name
         tmpl = has_output and self.REPORT_TEST_WITH_OUTPUT_TMPL or self.REPORT_TEST_NO_OUTPUT_TMPL
-        # TODO 过滤输出断言
-        patern = re.compile(r'AssertionError.*')
-        exception_log = patern.findall(e)
-        if exception_log == []:
-            exception_log = e
-        else:
-            exception_log = exception_log[0]
         script = self.REPORT_TEST_OUTPUT_TMPL % dict(
-            # id=tid, # todo 修改
+            id=tid,
             # output=saxutils.escape(o + e),
             # todo 此处修改
-            output=saxutils.escape(exception_log),  # only output exception imformation
+            output=saxutils.escape(e),  # only output exception imformation
         )
         # TODO 分隔request 和 response json
         sep = [i.group() for i in re.finditer(r'^\d.*=', o, re.MULTILINE)]
@@ -1107,18 +1083,16 @@ class HTMLTestRunner(Template_mixin):
             sep = sep[0]
             req_res_jsons = o.split(sep)
             req_json = req_res_jsons[0]
-            sep = [i.group() for i in re.finditer(r'^\d.*REQUEST:', req_json, re.MULTILINE)][0]
-            req_json = req_json.split(sep)[1]
             res_json = req_res_jsons[1]
         # TODO 展示request json
         req_script = self.REPORT_TEST_OUTPUT_TMPL % dict(
-            # id=tid,  # todo 修改
+            id=tid,
             output=saxutils.escape(req_json),
             # output=saxutils.escape(o),
         )
         # TODO 展示response json
         res_script = self.REPORT_TEST_OUTPUT_TMPL % dict(
-            # id=tid,  # todo 修改
+            id=tid,
             output=saxutils.escape(res_json),
             # output=saxutils.escape(o),
         )

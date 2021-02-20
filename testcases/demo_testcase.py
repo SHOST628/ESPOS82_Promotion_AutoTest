@@ -38,15 +38,25 @@ class DemoTestCase(unittest.TestCase):
     @data(*testcase_ids)
     @unpack
     def test_demo(cls, testcaseid):
-        if only_test_caseids != '':
-            only_test_case(cls, testcaseid, only_test_caseids)
-        elif skip_caseids != '':
-            exclude_case(cls, testcaseid, skip_caseids)
         testcase_sql = "select * from testcase where testcaseid = '{}' order by serialno".format(testcaseid)
         testcase = oracle.dict_fetchall(testcase_sql)
-        testcase_desci = testcase[0]['TESTCASEDESCI']
+        testcase_desci = '【DESCRIPTION】: ' + testcase[0]['TESTCASEDESCI']
         if testcase_desci is None:
-            testcase_desci = ''
+            testcase_desci = '【DESCRIPTION】: '
+        promparam_desci = ''
+        if 'PROMPARAMETER' in testcase[0]:
+            for case in testcase:
+                if case['PROMPARAMETER'] is not None and case['PROMPARAMETER'] != '':
+                    promparam_desci += case['PROMPARAMETER'] + '；&nbsp&nbsp'
+        space = '&nbsp'*41
+        # testcase_desci = """<br>&nbsp&nbsp{}{} ;<br>{}【PROMPARAMETER】: {}""".format(space, testcase_desci, space, promparam_desci)
+        testcase_desci = """{} ;<br>【PROMPARAMETER】: {}""".format(testcase_desci, promparam_desci)
+        # testcase_desci = """{} ;""".format(testcase_desci)
+        cls._testMethodDoc = testcase_desci
+        if only_test_caseids != '':
+            only_test_case(cls, testcaseid, only_test_caseids, cls._testMethodDoc)
+        elif skip_caseids != '':
+            exclude_case(cls, testcaseid, skip_caseids)
         # TODO START CHANGE
         # to extract common promtion param list
         _promless_detail = {}
@@ -70,13 +80,14 @@ class DemoTestCase(unittest.TestCase):
         # TODO END
         # add description for testcase
         # TODO 增加 promparam description
-        promparam_desci = ''
-        if 'PROMPARAMETER' in testcase[0]:
-            promparam_desci = testcase[0]['PROMPARAMETER']
-        testcase_desci = """{} ;
-        【PROMPARAMETER】: {}
-        """.format(testcase_desci, promparam_desci)
-        cls._testMethodDoc = testcase_desci
+        # promparam_desci = ''
+        # if 'PROMPARAMETER' in testcase[0]:
+        #     for desci in testcase:
+        #         if desci is not None or desci.stirp() != '':
+        #             promparam_desci = desci['PROMPARAMETER']
+        # testcase_desci = """{} ;<br>【PROMPARAMETER】: {}""".format(testcase_desci, promparam_desci)
+        # # testcase_desci = """{} ;""".format(testcase_desci)
+        # cls._testMethodDoc = testcase_desci
         # assemble a complete request json
         assembler = Assembler(cls, testcase, prom_param_list)
         request_json = assembler.assemble()
@@ -89,7 +100,7 @@ class DemoTestCase(unittest.TestCase):
         except Exception:
             cls.fail('【Response】: {}'.format(res.text))
         logger.info('================================================')
-        logger.info('Response 如下：\n {}'.format(response))
+        logger.info('RESPONSE:\n {}'.format(response))
         checker = Checker(cls)
         checker.check(testcaseid, response, prom_param_list)
 

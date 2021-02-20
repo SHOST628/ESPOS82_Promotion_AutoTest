@@ -103,7 +103,6 @@ import datetime
 import sys
 import io
 import time
-import re
 import logging
 import unittest
 from xml.sax import saxutils
@@ -217,40 +216,23 @@ class Template_mixin(object):
     output_list = Array();
 
     //控制testcase显示
-    // 魔改：增加 通过 、跳过 和 错误 的测试用例的显示
-    /* level - 0:Summary; 1:Failed; 2:All; 3:Passed; 4:Skiped; 5:Error */
+    // 魔改：增加 通过 、跳过 和跳过 的测试用例的显示
+    /* level - 0:Summary; 1:All; 2:Failed */
     function showCase(level) {
         trs = document.getElementsByTagName("tr");
         for (var i = 0; i < trs.length; i++) {
             tr = trs[i];
             id = tr.id;
-
             if (id.substr(0,2) == 'ft') {
-                if (level == 1) {
-                    tr.className = '';
+                if (level < 1) {
+                    tr.className = 'hiddenRow';
                 }
                 else {
-                    tr.className = 'hiddenRow';
+                    tr.className = '';
                 }
             }
             if (id.substr(0,2) == 'pt') {
-                if (level == 3) {
-                    tr.className = '';
-                }
-                else {
-                    tr.className = 'hiddenRow';
-                }
-            }
-            if (id.substr(0,2) == 'st') {
-                if (level == 4) {
-                    tr.className = '';
-                }
-                else {
-                    tr.className = 'hiddenRow';
-                }
-            }
-            if (id.substr(0,2) == 'et') {
-                if (level == 5) {
+                if (level > 1) {
                     tr.className = '';
                 }
                 else {
@@ -333,15 +315,6 @@ class Template_mixin(object):
     function close_shots(obj) {
         obj.parentElement.style.display="none";
     }
-    id
-    // 魔改 定义：复制文本内容
-    function copy(id) {
-            var e = document.getElementById(id);
-            // e.select(); // 选择对象
-            window.getSelection().selectAllChildren(e);
-            document.execCommand("Copy"); // 执行浏览器复制命令
-            // alert("复制成功！");
-    }
 
     --></script>
 
@@ -413,7 +386,7 @@ class Template_mixin(object):
     STYLESHEET_TMPL = """
 <style type="text/css" media="screen">
     body        { font-family: Microsoft YaHei,Consolas,arial,sans-serif; font-size: 100%; }
-    table       { font-size: 100%; } 
+    table       { font-size: 115%; } 
     pre         { white-space: pre-wrap;word-wrap: break-word; }
 
     /* -- heading ---------------------------------------------------------------------- */
@@ -471,18 +444,17 @@ class Template_mixin(object):
         width:20px;
     }
     /* 此处修改 结束 */
-    
     .popup_window {
         display: none;
         position: relative;
         left: 0px;
         top: 0px;
         /*border: solid #627173 1px; */
-        padding: 2px;
+        padding: 10px;
         /*background-color: #E6E6D6; */
         font-family: "Lucida Console", "Courier New", Courier, monospace;
         text-align: left;
-        font-size: 5pt;
+        font-size: 8pt;
         /* width: 500px;*/
     }
 
@@ -493,7 +465,7 @@ class Template_mixin(object):
         margin-bottom: 1ex;
     }
     #result_table {
-        width: 100%;
+        width: 99%;
     }
     #header_row {
         font-weight: bold;
@@ -505,10 +477,10 @@ class Template_mixin(object):
     .skipClass  { background-color: #CCCC99; }
     .failClass  { background-color: #FFCC99; }
     .errorClass { background-color: #ffc9c9; }
-    .passCase   { color: #000000; }
-    .skipCase   { color: #000000; }
-    .failCase   { color: #000000; }
-    .errorCase  { color: #000000; }
+    .passCase   { color: #6c6; }
+    .skipCase   { color: #996633; font-weight: bold; }
+    .failCase   { color: #FF6600; font-weight: bold; }
+    .errorCase  { color: #b64645; font-weight: bold; }
     .hiddenRow  { display: none; }
     .testcase   { margin-left: 2em; }
 
@@ -557,19 +529,9 @@ class Template_mixin(object):
 
     REPORT_TMPL = u"""
     <div class="btn-group btn-group-sm">
-        <!--
         <button class="btn btn-default" onclick='javascript:showCase(0)'>概要</button>
         <button class="btn btn-default" onclick='javascript:showCase(1)'>失败</button>
         <button class="btn btn-default" onclick='javascript:showCase(2)'>全部</button>
-        -->
-        <!--
-        <button class="btn btn-default" onclick='javascript:showCase(0)'>概要</button>
-        <button class="btn btn-default" onclick='javascript:showCase(3)'>通过</button>
-        <button class="btn btn-default" onclick='javascript:showCase(1)'>失败</button>
-        <button class="btn btn-default" onclick='javascript:showCase(4)'>跳过</button>
-        <button class="btn btn-default" onclick='javascript:showCase(5)'>错误</button>
-        <button class="btn btn-default" onclick='javascript:showCase(2)'>全部</button>
-        -->
     </div>
     <p></p>
     <table id='result_table' class="table table-bordered">
@@ -583,18 +545,13 @@ class Template_mixin(object):
         </colgroup>
         <tr id='header_row'>
             <td>测试套件/测试用例</td>
-            <td>总计</td>
-            <td><a class="popup_link" href='javascript:showCase(3)' style='color:#330033;'>通过</a></td>
-            <td><a class="popup_link" href='javascript:showCase(1)' style='color:#330033;'>失败</a></td>
-            <td><a class="popup_link" href='javascript:showCase(4)' style='color:#330033;'>跳过</a></td>
-            <td><a class="popup_link" href='javascript:showCase(5)' style='color:#330033;'>错误</a></td>
-            <td><a class="popup_link" href='javascript:showCase(0)' style='color:#330033;'>概要</a></td>
-            <!--
+            <td>总数</td>
+            <td>通过</td>
+            <td>失败</td>
+            <td>错误</td>
+            <td>跳过</td>
             <td>查看</td>
             <td>截图</td>
-            -->
-            <td>请求</td>
-            <td>响应</td>
         </tr>
         %(test_list)s
         <tr id='total_row'>
@@ -602,9 +559,8 @@ class Template_mixin(object):
             <td>%(count)s</td>
             <td>%(Pass)s</td>
             <td>%(fail)s</td>
-            <td>%(skip)s</td>
             <td>%(error)s</td>
-            <td>&nbsp;</td>
+            <td>%(skip)s</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
         </tr>
@@ -617,58 +573,28 @@ class Template_mixin(object):
         <td>%(count)s</td>
         <td>%(Pass)s</td>
         <td>%(fail)s</td>
-        <td>%(skip)s</td>
         <td>%(error)s</td>
-        <!--
+        <td>%(skip)s</td>
         <td><a href="javascript:showClassDetail('%(cid)s',%(count)s)">详情</a></td>
-        -->
-        <td>&nbsp;</td>
-        <td>&nbsp;</td>
         <td>&nbsp;</td>
     </tr>
 """  # variables: (style, desc, count, Pass, fail, skip,error, cid)
 
     REPORT_TEST_WITH_OUTPUT_TMPL = r"""
-    <tr id='%(tid)s' class='%(Class)s'>
-    <!-- 固定用例id列的宽度-->
-    <td width='500px' style='word-wrap:break-word;' class='%(style)s'><div class='testcase'>%(desc)s</div></td>
+<tr id='%(tid)s' class='%(Class)s'>
+    <td class='%(style)s'><div class='testcase'>%(desc)s</div></td>
     <td colspan='6' align='center'>
 
     <!--css div popup start-->
-    <a class="popup_link" onfocus='this.blur();' style='color:#330033;' href="javascript:showTestDetail('div_%(tid)s')" >
+    <a class="popup_link" onfocus='this.blur();' href="javascript:showTestDetail('div_%(tid)s')" >
         %(status)s</a>
+
     <div id='div_%(tid)s' class="popup_window">
         <pre>%(script)s</pre>
     </div>
     <!--css div popup end-->
     </td>
-    
-    <!-- 修改开始-->
-    <td colspan='1' align='left'>
-    <!--css div popup start-->
-    <a class="popup_link" onfocus='this.blur();' style='color:#330033;' href="javascript:showTestDetail('div_%(tid)s_req')" >
-        请求</a>
-    <!--  复制文本 -->
-    <div id='div_%(tid)s_req' class="popup_window">
-        <p style="text-align: center">
-            <a class="popup_link" style='color:#330033;'  href="javascript:copy('div_%(tid)s_req_pre')" >复制</a>
-        </p>
-        <pre id='div_%(tid)s_req_pre'>%(req_script)s</pre>
-    </div>
-    <!--css div popup end-->
-    </td>
-    <!-- 修改结束-->
-    
-    <!-- 修改开始-->
-    <td colspan='1' align='left'>
-    <!--css div popup start-->
-    <a class="popup_link" onfocus='this.blur();' style='color:#330033;' href="javascript:showTestDetail('div_%(tid)s_res')" >
-        响应</a>
-    <div id='div_%(tid)s_res' class="popup_window">
-        <pre>%(res_script)s</pre>
-    <!--css div popup end-->
-    </td>
-    <!-- 修改结束-->
+    <td>%(img)s</td> <!--此处修改-->
 </tr>
 """  # variables: (tid, Class, style, desc, status,img)
 
@@ -676,16 +602,11 @@ class Template_mixin(object):
 <tr id='%(tid)s' class='%(Class)s'>
     <td class='%(style)s'><div class='testcase'>%(desc)s</div></td>
     <td colspan='6' align='center'>%(status)s</td>
-    <!--
     <td>%(img)s</td>
-    -->
-    <td>请求</td>
-    <td>响应</td>
 </tr>
 """  # variables: (tid, Class, style, desc, status，img)
 
-    # REPORT_TEST_OUTPUT_TMPL = r"""%(id)s: %(output)s"""  # variables: (id, output)
-    REPORT_TEST_OUTPUT_TMPL = r"""%(output)s"""  # variables: (output)
+    REPORT_TEST_OUTPUT_TMPL = r"""%(id)s: %(output)s"""  # variables: (id, output)
 
     # ------------------------------------------------------------------------
     # ENDING
@@ -1066,61 +987,17 @@ class HTMLTestRunner(Template_mixin):
         has_output = bool(o or e)   #o:testcase 里面print出来的内容 ,  e: exception里面的内容,一些出错的信息
         # todo 此处修改
         # has_output = bool(o)   #o:testcase 里面print出来的内容
-        # TODO  增加过滤case展示
-        if n == 0:
-            tid_flag = 'p'
-        elif n == 1:
-            tid_flag = 'f'
-        elif n == 2:
-            tid_flag = 'e'
-        else:
-            tid_flag = 's'
-        tid = tid_flag + 't%s_%s' % (cid + 1, tid + 1)
-        # tid = (n == 0 and 'p' or 'f') + 't%s.%s' % (cid + 1, tid + 1)
+        tid = (n == 0 and 'p' or 'f') + 't%s.%s' % (cid + 1, tid + 1)
         name = t.id().split('.')[-1]
-        name = re.sub(r'.*_', '', name)
         doc = t.shortDescription() or ""
-        name = '<p style="text-align:center">CASEID:&nbsp&nbsp' + name + '</p>'
-        # desc = doc and ('%s: %s' % (name, doc)) or name
-        desc = doc and ('%s %s' % (name, doc)) or name
+        desc = doc and ('%s: %s' % (name, doc)) or name
         tmpl = has_output and self.REPORT_TEST_WITH_OUTPUT_TMPL or self.REPORT_TEST_NO_OUTPUT_TMPL
-        # TODO 过滤输出断言
-        patern = re.compile(r'AssertionError.*')
-        exception_log = patern.findall(e)
-        if exception_log == []:
-            exception_log = e
-        else:
-            exception_log = exception_log[0]
+
         script = self.REPORT_TEST_OUTPUT_TMPL % dict(
-            # id=tid, # todo 修改
-            # output=saxutils.escape(o + e),
+            id=tid,
+            output=saxutils.escape(o + e),
             # todo 此处修改
-            output=saxutils.escape(exception_log),  # only output exception imformation
-        )
-        # TODO 分隔request 和 response json
-        sep = [i.group() for i in re.finditer(r'^\d.*=', o, re.MULTILINE)]
-        req_json = ''
-        res_json = ''
-        if sep == []:
-            req_json = o
-        else:
-            sep = sep[0]
-            req_res_jsons = o.split(sep)
-            req_json = req_res_jsons[0]
-            sep = [i.group() for i in re.finditer(r'^\d.*REQUEST:', req_json, re.MULTILINE)][0]
-            req_json = req_json.split(sep)[1]
-            res_json = req_res_jsons[1]
-        # TODO 展示request json
-        req_script = self.REPORT_TEST_OUTPUT_TMPL % dict(
-            # id=tid,  # todo 修改
-            output=saxutils.escape(req_json),
-            # output=saxutils.escape(o),
-        )
-        # TODO 展示response json
-        res_script = self.REPORT_TEST_OUTPUT_TMPL % dict(
-            # id=tid,  # todo 修改
-            output=saxutils.escape(res_json),
-            # output=saxutils.escape(o),
+            # output=saxutils.escape(o), # don't out exception imformation
         )
         # TODO: 此处修改开始  加入截图
         # if t.img:
@@ -1135,17 +1012,14 @@ class HTMLTestRunner(Template_mixin):
         # TODO: 此处修改结束
         row = tmpl % dict(
             tid=tid,
-            # 打开report 时，隐藏case  failCase: (n == 1 and 'hiddenRow')  errorCase: (n == 2 and 'hiddenRow')
-            Class=(n == 0 and 'hiddenRow' or (n == 1 and 'hiddenRow') or (n == 3 and 'hiddenRow') or (n == 2 and 'hiddenRow') or 'none'),
+            Class=(n == 0 and 'hiddenRow' or 'none'),
             style=n == 2 and 'errorCase' or (n == 1 and 'failCase') or (n == 3 and 'skipCase' or 'none'),
             desc=desc,
             script=script,
             status=self.STATUS[n],
             # TODO:此处修改
             # img=img,
-            # 新增 req_json , res_json 展示列
-            req_script=req_script,
-            res_script=res_script,
+            img=None,
         )
         rows.append(row)
         if not has_output:

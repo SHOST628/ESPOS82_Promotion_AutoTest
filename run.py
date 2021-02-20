@@ -29,7 +29,7 @@ def run(suite):
     else:
         report = re.sub(r'\.html', '_{}.html'.format(cur_time), report_path)
     with open(report, 'wb') as fp:
-        HTMLTestRunner(stream=fp, verbosity=2, title="测试报告", description="测试案例执行结果").run(suite)
+        HTMLTestRunner(stream=fp, verbosity=2, title="测试报告", description="").run(suite)
 
 
 if __name__ == '__main__':

@@ -227,6 +227,6 @@ class Assembler:
             func = getattr(self.unit, param)
             self_json = func(self_json)
         self_json = json_dumps(self_json, indent=4)
-        logger.info('Generate request json: \n {}'.format(self_json))
+        logger.info('REQUEST:\n {}'.format(self_json))
         return self_json
 

@@ -215,7 +215,9 @@ def exclude_param_case(test_cls, exclude_param, common_params):
             test_cls.skipTest('跳过执行该TestCase，包含需要被排除的参数: {}'.format(exclude_param))
 
 
-def only_test_case(test_cls, testcaseid, only_test_caseids):
+# TODO 优化代码，提取only_test_caseids_tmp和only_test_caseids_range  公有部分
+# TODO 将testcase中的该函数调用改为引用方式
+def only_test_case(test_cls, testcaseid, only_test_caseids, desci=''):
     """
     only test some cases in only_test_caseids list
     :param test_cls:
@@ -230,21 +232,25 @@ def only_test_case(test_cls, testcaseid, only_test_caseids):
     only_test_caseids_range = []
     for caseid in skips_:
         if '-' in caseid:
-            range = caseid.split('-')
-            min = range[0].strip()
-            max = range[1].strip()
+            ranges = caseid.split('-')
+            min = ranges[0].strip()
+            max = ranges[1].strip()
             if min != '' and max != '':
                 if max < min:
                     min, max = max, min
                 only_test_caseids_range.append([min, max])
-        only_test_caseids_tmp.append(caseid)
+        else:
+            only_test_caseids_tmp.append(caseid.strip())
     if testcaseid not in only_test_caseids_tmp:
-        test_cls.skipTest('没有在指定执行的TestCase列表中')
-    elif only_test_caseids_range != []:
-        for range in only_test_caseids_range:
-            min, max = range
-            if testcaseid < min or testcaseid > max:
-                test_cls.skipTest('没有在指定执行的TestCase列表中')
-
-
-
+        if only_test_caseids_range != []:
+            for i,ranges in enumerate(only_test_caseids_range):
+                min, max = ranges
+                if testcaseid >= min and testcaseid <= max:
+                    break
+                else:
+                    if i == len(only_test_caseids_range) -1:
+                        test_cls._testMethodDoc = desci
+                        test_cls.skipTest('没有在指定执行的TestCase列表中')
+        else:
+            test_cls._testMethodDoc = desci
+            test_cls.skipTest('没有在指定执行的TestCase列表中')
