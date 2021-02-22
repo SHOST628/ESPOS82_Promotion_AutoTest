@@ -21,7 +21,7 @@ from util.ddt import TestNameFormat
 from testcases.test_assertion import Checker
 import unittest
 import json
-import io
+import re
 
 
 testcase_id_sql = "select distinct testcaseid from testcase order by testcaseid"
@@ -40,17 +40,36 @@ class DemoTestCase(unittest.TestCase):
     def test_demo(cls, testcaseid):
         testcase_sql = "select * from testcase where testcaseid = '{}' order by serialno".format(testcaseid)
         testcase = oracle.dict_fetchall(testcase_sql)
-        testcase_desci = '【DESCRIPTION】: ' + testcase[0]['TESTCASEDESCI']
-        if testcase_desci is None:
-            testcase_desci = '【DESCRIPTION】: '
-        promparam_desci = ''
-        if 'PROMPARAMETER' in testcase[0]:
-            for case in testcase:
-                if case['PROMPARAMETER'] is not None and case['PROMPARAMETER'] != '':
-                    promparam_desci += case['PROMPARAMETER'] + '；&nbsp&nbsp'
+        testcase_desci = '【CASE DESCRIPTION】:'
+        promparam_desci = '【PROMPARAMETER】:'
+        promid_desci = '【PROMID DESCRIPTION】: '
+        remarks = '【REMARK】:'
+        caseid = ''
+        casedesci_count = 0
+        remarks_count = 0
+        for i,case in enumerate(testcase):
+            if case['TESTCASEDESCI'] is not None and case['TESTCASEDESCI'] != '':
+                if casedesci_count == 0:
+                    testcase_desci += case['TESTCASEDESCI']
+                casedesci_count += 1
+            if case['REMARKS'] is not None and case['REMARKS'] != '':
+                if remarks_count == 0:
+                    remarks += case['REMARKS']
+                casedesci_count += 1
+            if case['PROMPARAMETER'] is not None and case['PROMPARAMETER'] != '':
+                promparam_desci += case['PROMPARAMETER'] + '；&nbsp&nbsp'
+            if case['PROMLESSDETAIL'] is None:
+                caseid = 'None'
+            else:
+                caseid = re.sub(r'=\d+[.]?\d*', '', case['PROMLESSDETAIL'])
+            if i == len(testcase) - 1:
+                promid_desci += 'ITEMCODE={}, PROMIDS={}'.format(case['ITEMCODE'], caseid)
+            else:
+                promid_desci = promid_desci + 'ITEMCODE={}, PROMIDS={}&nbsp&nbsp||&nbsp&nbsp '\
+                    .format(case['ITEMCODE'], caseid)
         space = '&nbsp'*41
         # testcase_desci = """<br>&nbsp&nbsp{}{} ;<br>{}【PROMPARAMETER】: {}""".format(space, testcase_desci, space, promparam_desci)
-        testcase_desci = """{} ;<br>【PROMPARAMETER】: {}""".format(testcase_desci, promparam_desci)
+        testcase_desci = """{}<br>{} ;<br>{}<br>{}""".format(promid_desci, testcase_desci, promparam_desci, remarks)
         # testcase_desci = """{} ;""".format(testcase_desci)
         cls._testMethodDoc = testcase_desci
         if only_test_caseids != '':

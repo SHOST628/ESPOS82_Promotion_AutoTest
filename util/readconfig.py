@@ -11,6 +11,13 @@ config_path = os.path.join(project_path, 'config\\config.ini')
 config = ConfigParser()
 config.read(config_path, encoding='utf-8-sig')
 
+# DB config
+database_connection_url = config.get('DataSource', 'DatabaseConnectionUrl')
+database_user = config.get('DataSource', 'DatabaseUser')
+database_password = config.get('DataSource', 'DatabasePassword')
+db_type = config.get('DataSource','Mysql_Oracle_Connection')
+db_url = database_user + '/' + database_password + '@' + database_connection_url
+
 # api
 api_url = config.get('Api', 'Url')
 api_key = config.get('Api', 'ApiKey')
@@ -46,13 +53,6 @@ only_test_caseids = config.get('TestCaseParam', 'OnlyTestCaseId')
 # report path
 html_excel = config.get('Report', 'Html_Excel')
 report_path = config.get('Report', 'Path')
-
-# DB config
-database_connection_url = config.get('DataSource', 'DatabaseConnectionUrl')
-database_user = config.get('DataSource', 'DatabaseUser')
-database_password = config.get('DataSource', 'DatabasePassword')
-db_type = config.get('DataSource','Mysql_Oracle_Connection')
-db_url = database_user + '/' + database_password + '@' + database_connection_url
 
 # email config
 if_send = config.get("Mail", "If_Send")

@@ -193,6 +193,7 @@ class Template_mixin(object):
 
     DEFAULT_TITLE = 'Unit Test Report'
     DEFAULT_DESCRIPTION = ''
+    DEFAULT_TEST_DESCRIPTION = ''
 
     # ------------------------------------------------------------------------
     # HTML Template
@@ -378,7 +379,7 @@ class Template_mixin(object):
             },
             series : [
                 {
-                    name: '测试执行情况',
+                    name: '测试情况比例',
                     type: 'pie',
                     radius : '60%%',
                     center: ['50%%', '60%%'],
@@ -418,13 +419,27 @@ class Template_mixin(object):
 
     /* -- heading ---------------------------------------------------------------------- */
     h1 {
-        font-size: 16pt;
+        // 增加加粗
+        font-weight: bold;
+        font-size: 25px;
         color: gray;
     }
 
     h2 {
-        font-size: 10pt;
+        font-size: 16px;
         color: gray;
+        margin-top:1.5ex;
+        margin-bottom:1.5ex;
+    }
+    
+    h3 {
+        font-size: 8px;
+        color: gray;
+        margin-top:1px;
+        margin-bottom:1px;
+        line-height:0.5;
+        text-indent:0.5em;
+        # overflow:hidden;
     }
 
     .heading {
@@ -536,13 +551,17 @@ class Template_mixin(object):
     HEADING_TMPL = """
     <!--
     <div class='page-header'>
-        <h1>%(title)s</h1>
+    <h1>%(title)s</h1>
     %(parameters)s
     </div>
     //-->
     <div style="float: left;width:50%%;"><p class='description'>
         <h1>%(title)s</h1>
-        <h2>%(parameters)s</h2>
+        <h2>测试情况</h2>
+        <h3>%(parameters)s</h3>
+        <!--增加测试环境信息描述-->
+        <h2>测试环境</h2>
+        <h3>%(test_description)s</h3>
         %(description)s
     </p></div>
     <div id="chart" style="width:50%%;height:290px;margin-top:18px;float:left;"></div>
@@ -631,7 +650,7 @@ class Template_mixin(object):
     REPORT_TEST_WITH_OUTPUT_TMPL = r"""
     <tr id='%(tid)s' class='%(Class)s'>
     <!-- 固定用例id列的宽度-->
-    <td width='500px' style='word-wrap:break-word;' class='%(style)s'><div class='testcase'>%(desc)s</div></td>
+    <td width='550px' style='word-wrap:break-word;' class='%(style)s'><div class='testcase'>%(desc)s</div></td>
     <td colspan='6' align='center'>
 
     <!--css div popup start-->
@@ -902,7 +921,7 @@ class _TestResult(TestResult):
 
 
 class HTMLTestRunner(Template_mixin):
-    def __init__(self, stream=sys.stdout, verbosity=2, title=None, description=None):
+    def __init__(self, stream=sys.stdout, verbosity=2, title=None, description=None, test_description=None):
         self.stream = stream
         self.verbosity = verbosity
         if title is None:
@@ -913,6 +932,10 @@ class HTMLTestRunner(Template_mixin):
             self.description = self.DEFAULT_DESCRIPTION
         else:
             self.description = description
+        if test_description is None:
+            self.test_description = self.DEFAULT_TEST_DESCRIPTION
+        else:
+            self.test_description = test_description
 
         self.startTime = datetime.datetime.now()
 
@@ -995,6 +1018,8 @@ class HTMLTestRunner(Template_mixin):
             title=saxutils.escape(self.title),
             parameters=''.join(a_lines),
             description=saxutils.escape(self.description),
+            # test_description=saxutils.escape(self.test_description)
+            test_description=self.test_description
         )
         return heading
 
