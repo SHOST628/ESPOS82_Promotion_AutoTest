@@ -1,5 +1,4 @@
-from param_parser.param_parser import to_dict
-import re
+from util.param_parser.param_parser import to_dict
 
 
 def _salestotal_dict(test_cls, testcase):

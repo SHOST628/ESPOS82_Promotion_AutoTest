@@ -16,11 +16,12 @@ def param_extractor(prom_param, config_prom_param):
     """
     if config_prom_param == '' or config_prom_param is None:
         return []
-    prom_params = [param.strip() for param in config_prom_param.split(',')]
+    prom_params = ['-'+ param.strip() for param in config_prom_param.split(',')]
     config_prom_param = ','.join(prom_params)
     config_prom_param = re.sub(r',', '|', config_prom_param)
     pattern = re.compile(r'{}'.format(config_prom_param))
     common_prom_params = pattern.findall(prom_param)
+    common_prom_params = [param.replace('-', '') for param in common_prom_params]
     return common_prom_params
 
 
@@ -44,8 +45,12 @@ def param_extractors(promids, config_prom_param):
 
 def to_dict(test_cls, key, value):
     """
-    turn str into dict, for example,
-    str: promid=10001,vipgradecenter=*  --> dict: {'promid':'10001', 'vipgradecenter':'*'}
+    turn str into dict, just for testcase['VIPINFO'], testcase['PROMLESSDETAIL'] for example,
+    1)str: promid=10001,vipgradecenter=*  --> dict: {'promid':'10001', 'vipgradecenter':'*'}
+
+    for testcase['PROMLESSDETAIL']:
+    2)str: PEOHQO200900015=100&50,PEOHQO201100031=130 --> {'PEOHQO200900015':['100', '50'], 'PEOHQO201100031':'30'}
+
     :param test_cls:
     :param key:  testcase key
     :param value:  testcase value
@@ -60,13 +65,16 @@ def to_dict(test_cls, key, value):
     elif '=' in value:
         dic = {}
         count_equal = value.count('=')
-        len_equal = len(value.split(','))
-        if count_equal == len_equal:
+        count_comma = value.count(',')
+        if count_equal == count_comma + 1:
             kvs = value.split(',')
             for kv in kvs:
                 k, v = kv.split('=')
                 if k.strip() == '' or v.strip() == '':
+                    test_cls._testMethodDoc += "<font color='red' style='font-weight:bold'> TESTCASE 下" \
+                                               "【{}】的值为:{} ,填写格式不正确 </font>".format(key, value)
                     test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
+                # ???
                 contain_num = re.search(r'\d+', k.strip())
                 if contain_num is None:
                     k = k.lower().strip()
@@ -74,9 +82,17 @@ def to_dict(test_cls, key, value):
                 else:
                     k = k.strip()
                     v = v.strip()
+                    # just for testcase['PROMLESSDETAIL']
+                    if '&' in v:
+                        v = v.split('&')
+                        v = [i.strip() for i in v]
                 dic[k] = v
             return dic
-        test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确{} {}'.format(key, value, count_equal, len_equal))
+        test_cls._testMethodDoc += "<font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确</font>".\
+            format(key, value)
+        test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
+    test_cls._testMethodDoc += "<font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确 </font>".format(
+        key, value)
     test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
 
 
@@ -86,7 +102,7 @@ def param_to_dict(test_cls, key, value):
     turn str into dict, for example,
     str: promid=10001,vipgradecenter=*;vipbonuscenter=*  --> dict: {'request':{'promid':'10001','vipgradecenter':'*'}, 'response':{'vipbonuscenter':'*'}}
     :param dict_str:
-    :return: the key and value are string
+    :return: the key and value are string  for example, {'request': None, 'reponse': xxx}  {'request':xxx, 'response':{xxx:xxx}}
     """
     # 用于转换TESTCASE中 PROMPARAM_XX 字段的数据
     if value is None:
@@ -107,6 +123,7 @@ def param_to_dict(test_cls, key, value):
         t_dict['response'] = res_dict
         return t_dict
     else:
+        test_cls._testMethodDoc += "<font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确 </font>".format(key, value)
         test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
 
 
@@ -120,49 +137,35 @@ def get_param_to_dict(test_cls, key, testcase, request_response, *need_params):
     :param need_params: to check whether the data is completed
     :return: if_request = 0, return dict ; if_request = 1, return list including dict
     """
-    COUNT = 0
     need_param = '|'.join(need_params)
     results = []
     for i, row in enumerate(testcase):
         if row[key] is None:
             if request_response == 0:
-                if i == len(testcase) - 1:
-                    if i == COUNT:
-                        test_cls.skipTest('请补充完整 TestCase 中 {} 数据'.format(key))
-                COUNT += 1
+                pass
             else:
                 # TODO 处理所有行 均为空的情况
                 promparam = param_to_dict(test_cls, key, ';')
                 results.append(promparam)
-                if i == len(testcase) -1:
-                    return results
         elif row[key].strip() == '':
             if request_response == 0:
-                if i == len(testcase) - 1:
-                    if i == COUNT:
-                        test_cls.skipTest('请补充完整 TestCase 中 {} 数据'.format(key))
-                COUNT += 1
+                pass
             else:
                 promparam = param_to_dict(test_cls, key, ';')
                 results.append(promparam)
-                if i == len(testcase) -1:
-                    return results
         elif len(list(set(re.findall(need_param, row[key], flags=re.IGNORECASE)))) == len(need_params):
             promparam = param_to_dict(test_cls, key, row[key])
-            # print('COUNT: {}, 匹配结果：{}, need_params:{}'.format(COUNT, re.findall(need_param, row[key], flags=re.IGNORECASE), need_params))
             if request_response == 0:
-                return promparam
+                results.append(promparam)
             else:
                 results.append(promparam)
-                if i == len(testcase) -1:
-                    return results
         else:
-            if i == len(testcase) - 1:
-                if i == COUNT:
-                    test_cls.skipTest('请补充完整 TestCase 中 {} 数据'.format(key))
-                    # test_cls.skipTest('请补充完整 TestCase 中 {} 数据, 输入数据：{}, 需要匹配字符串：{}, 匹配结果:{}'.format(key, need_param, row[key], str(re.findall(need_param, row[key], flags=re.IGNORECASE))))
-            COUNT += 1
-        # print('COUNT: {}, 匹配结果：{}, need_params:{}'.format(COUNT, re.findall(need_param, row[key], flags=re.IGNORECASE),need_params))
+            pass
+
+    if results == []:
+        test_cls._testMethodDoc += "<font color='red' style='font-weight:bold'> 请补充完整 TestCase 中 {} 的数据 </font>".format(key)
+        test_cls.skipTest("请补充完整 TestCase 中 {} 的数据".format(key))
+    return results
 
 
 def exclude_case(test_cls, testcaseid, skip_caseids):

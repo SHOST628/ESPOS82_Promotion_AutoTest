@@ -214,7 +214,8 @@ class Template_mixin(object):
 
 </head>
 <body>
-    <script language="javascript" type="text/javascript"><!--
+    <script language="javascript" type="text/javascript">
+    <!--
     output_list = Array();
 
     //控制testcase显示
@@ -326,6 +327,57 @@ class Template_mixin(object):
         d.close();
     }
     */
+    
+    /*
+    //魔改 能手动调节表格宽度
+    function adjust_table_width(id){
+        var tTD;      //用来存储当前更改宽度的Table Cell,避免快速移动鼠标的问题
+        var table = document.getElementById(id);
+        for (i = table.rows.length-3; i < table.rows.length; i++){
+            for (j = 0; j < table.rows[i].cells.length; j++) {
+                table.rows[i].cells[j].onmousedown = function () {
+                //记录单元格
+                    tTD = this;
+                    if (event.offsetX > tTD.offsetWidth - 10) {
+                        tTD.mouseDown = true;
+                        tTD.oldX = event.x;
+                        tTD.oldWidth = tTD.offsetWidth;
+                    }
+                };
+                table.rows[i].cells[j].onmouseup = function () {
+                //结束宽度调整
+                    if (tTD == undefined) tTD = this;
+                    tTD.mouseDown = false;
+                    tTD.style.cursor = 'default';
+                };
+                table.rows[i].cells[j].onmousemove = function () {
+                //更改鼠标样式
+                    if (event.offsetX > this.offsetWidth - 10)
+                        this.style.cursor = 'col-resize';
+                    else
+                        this.style.cursor = 'default';
+                //取出暂存的Table Cell
+                    if (tTD == undefined) tTD = this;
+                //调整宽度
+                    if (tTD.mouseDown != null && tTD.mouseDown == true) {
+                        tTD.style.cursor = 'default';
+                        if (tTD.oldWidth + (event.x - tTD.oldX) > 0)
+                            tTD.width = tTD.oldWidth + (event.x - tTD.oldX);
+                        //调整列宽
+                        tTD.style.width = tTD.width;
+                        tTD.style.cursor = 'col-resize';
+                        //调整该列中的每个Cell
+                        table = tTD;
+                        while (table.tagName != 'TABLE') table = table.parentElement;
+                        for (j = 0; j < table.rows.length; j++) {
+                            table.rows[j].cells[tTD.cellIndex].width = tTD.width;
+                        }
+                    }
+                };
+            }
+        }
+    }
+    */
 
     function show_shots(obj) {
 	    obj.nextElementSibling.style.display="block";
@@ -344,11 +396,14 @@ class Template_mixin(object):
             // alert("复制成功！");
     }
 
-    --></script>
+    -->
+    //document.getElementById("adjust_table_width").innerHTML = adjust_table_width()
+    </script>
 
     <div id="div_base">
         %(heading)s
         %(report)s
+        <!--adjust_table_width('result_table')-->
         %(ending)s
         %(chart_script)s
     </div>
@@ -775,8 +830,8 @@ class _TestResult(TestResult):
             sys.stderr = self.stderr0
             self.stdout0 = None
             self.stderr0 = None
-        # TODO 解决自定义mylogger 以后无法输入log的问题
-        return self.outputBuffer.getvalue() +'\n'+self.log_cap.getvalue()
+        # TODO 解决自定义mylogger 以后无法输出log的问题
+        return self.outputBuffer.getvalue() + '\n' + self.log_cap.getvalue()
 
     def stopTest(self, test):
         # Usually one of addSuccess, addError or addFailure would have been called.
@@ -1051,7 +1106,7 @@ class HTMLTestRunner(Template_mixin):
             row = self.REPORT_CLASS_TMPL % dict(
                 style=ne > 0 and 'errorClass' or nf > 0 and 'failClass'or ns > 0 and 'skipClass' or 'passClass',
                 desc=desc,
-                count=np + nf + ne,
+                count=np + nf + ne + ns,
                 Pass=np,
                 fail=nf,
                 error=ne,
@@ -1110,12 +1165,13 @@ class HTMLTestRunner(Template_mixin):
         desc = doc and ('%s %s' % (name, doc)) or name
         tmpl = has_output and self.REPORT_TEST_WITH_OUTPUT_TMPL or self.REPORT_TEST_NO_OUTPUT_TMPL
         # TODO 过滤输出断言
-        patern = re.compile(r'AssertionError.*')
+        patern = re.compile(r'AssertionError[\s\S]*', re.MULTILINE)
         exception_log = patern.findall(e)
         if exception_log == []:
             exception_log = e
         else:
             exception_log = exception_log[0]
+            exception_log = re.sub(r'AssertionError:\s*', '', exception_log)
         script = self.REPORT_TEST_OUTPUT_TMPL % dict(
             # id=tid, # todo 修改
             # output=saxutils.escape(o + e),

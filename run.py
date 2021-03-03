@@ -8,7 +8,7 @@ from util.readconfig import api_url
 from util.readconfig import api_key
 from util.mylogger import logger
 from frozen_path import cur_path
-from util.file import mkdir
+from util.mk_folder import mkdir
 import unittest
 import time
 import os

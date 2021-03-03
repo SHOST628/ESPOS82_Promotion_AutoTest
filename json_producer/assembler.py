@@ -9,9 +9,9 @@ from util.readconfig import dis_method_id
 from util.readconfig import apply_serail
 from util.readconfig import is_checked
 from util.readconfig import base_json as bjson
-from param_parser.param_parser import to_dict
-from param_parser.param_parser import get_param_to_dict
-from param_parser.param_parser import REQUEST
+from util.param_parser.param_parser import to_dict
+from util.param_parser.param_parser import get_param_to_dict
+from util.param_parser.param_parser import REQUEST
 from json import dumps as json_dumps
 from util.mylogger import logger
 
@@ -86,7 +86,7 @@ class Units:
             self.cls.skipTest('请补全config [PromParams] 下 BRMethodId 的信息')
         base_json = self.param_xe(base_json)
         vipinfo = None
-        promparam_br = get_param_to_dict(self.cls, 'PROMPARAM_BR', self.testcase, REQUEST, 'bonus')
+        promparam_br = get_param_to_dict(self.cls, 'PROMPARAM_BR', self.testcase, REQUEST, 'bonus')[0]
         for row in self.testcase:
             if row['VIPINFO'] is not None:
                 vipinfo = to_dict(self.cls, 'VIPINFO', row['VIPINFO'])
@@ -129,15 +129,31 @@ class Units:
             self.cls.skipTest('请补全config [PromParams] 下 BLMethodId 的信息')
         base_json = self.param_xe(base_json)
         promparam_bl = get_param_to_dict(self.cls, 'PROMPARAM_BL', self.testcase, REQUEST, 'promid', 'itemindex', 'useqty')
-        req_prom_quotas = {'reqPromQuota':[]}
+        req_prom_quotas = {'reqPromQuota': []}
         req_prom_quota = {'promId': '', 'promMethodId': '', 'items': []}
-        item = {'itemIndex': 0, 'useQty': 0}
-        item['itemIndex'] = int(promparam_bl['request']['itemindex'])
-        item['useQty'] = int(promparam_bl['request']['useqty'])
-        req_prom_quota['items'].append(item)
-        req_prom_quota['promId'] = promparam_bl['request']['promid']
-        req_prom_quota['promMethodId'] = bl_method_id
-        req_prom_quotas['reqPromQuota'].append(req_prom_quota)
+        # solve the problem that quota multi items
+        for i, bl in enumerate(promparam_bl):
+            item = {'itemIndex': 0, 'useQty': 0}
+            req_prom_quota['promId'] = bl['request']['promid']
+            req_prom_quota['promMethodId'] = bl_method_id
+            item['itemIndex'] = int(bl['request']['itemindex'])
+            item['useQty'] = int(bl['request']['useqty'])
+            if i == 0:
+                req_prom_quota['items'].append(item)
+                req_prom_quotas['reqPromQuota'].append(req_prom_quota)
+            else:
+                if req_prom_quotas['reqPromQuota'] != []:
+                    for prom_quota in req_prom_quotas['reqPromQuota']:
+                        if req_prom_quota['promId'] == prom_quota['promId']:
+                            # req_prom_quotas['reqPromQuota']['']
+                            prom_quota['items'].append(item)
+                            break
+                        else:
+                            req_prom_quota['items'].append(item)
+                            req_prom_quotas['reqPromQuota'].append(req_prom_quota)
+                            break
+                # req_prom_quota['items'].append(item)
+            # req_prom_quotas['reqPromQuota'].append(req_prom_quota)
         base_json.update(req_prom_quotas)
         return base_json
 
@@ -183,7 +199,7 @@ class Units:
         _is_checked = bool(is_checked)
         if self.testcase == []:
             self.cls.skipTest('找不到TestCase数据')
-        promparam_dis = get_param_to_dict(self.cls, 'PROMPARAM_DIS', self.testcase, REQUEST, 'promid', 'lessitemindex', 'useqty', 'pkgqty')
+        promparam_dis = get_param_to_dict(self.cls, 'PROMPARAM_DIS', self.testcase, REQUEST, 'promid', 'lessitemindex', 'useqty', 'pkgqty')[0]
         req_disc_one_item_user_select = {'reqDiscOneItemUserSelect': []}
         req_disc_one_item = {'promId': '', 'promMethodId': '', 'selectedPromPackages': []}
         req_disc_one_item['promId'] = promparam_dis['request']['promid']

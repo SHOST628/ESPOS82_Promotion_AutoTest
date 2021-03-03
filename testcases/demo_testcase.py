@@ -9,16 +9,16 @@ from util.readconfig import prom_param
 from util.readconfig import skip_caseids
 from util.readconfig import only_test_caseids
 from util.readconfig import exclude_promparam
-from param_parser.param_parser import to_dict
-from param_parser.param_parser import param_extractors
-from param_parser.param_parser import param_extractor
-from param_parser.param_parser import exclude_case
-from param_parser.param_parser import exclude_param_case
-from param_parser.param_parser import only_test_case
+from util.param_parser.param_parser import to_dict
+from util.param_parser.param_parser import param_extractors
+from util.param_parser.param_parser import param_extractor
+from util.param_parser.param_parser import exclude_case
+from util.param_parser.param_parser import exclude_param_case
+from util.param_parser.param_parser import only_test_case
 from json_producer.assembler import Assembler
 from con_requests.send_request import Requester
 from util.ddt import TestNameFormat
-from testcases.test_assertion import Checker
+from util.test_assertion import Checker
 import unittest
 import json
 import re

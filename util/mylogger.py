@@ -1,7 +1,7 @@
 from logging import handlers
 from frozen_path import cur_path
 from util.readconfig import log_file
-from util.file import mkdir
+from util.mk_folder import mkdir
 from util.readconfig import debug_level
 import logging
 import os
