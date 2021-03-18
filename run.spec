@@ -21,7 +21,8 @@ a = Analysis(['./run.py',
               './util/oracle.py',
               './util/readconfig.py',
               './util/wr_excel.py',
-              './util/case_log.py'
+              './util/case_log.py',
+              './util/common_util.py'
              ],
              pathex=['E:/PycharmProjects/ESPOS82_Promotion_AutoTest'],
              binaries=[],

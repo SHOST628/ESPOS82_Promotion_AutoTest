@@ -60,9 +60,10 @@ class Units:
         =================================
         [TESTCASE] VIPINFO:  customerCode=NV02D0130120000006,vipGradeCenter=*,vipBonusCenter=*  (including these columns)
         """
-        salestotal_vip = produce_salestotal_vip(self.cls, self.testcase)
+        salestotal_vip = produce_salestotal_vip(self.cls, self.testcase, 1)
         base_json['salesData'].update(salestotal_vip)
         return base_json
+        pass
 
     def param_br(self, base_json):
         """
@@ -86,7 +87,11 @@ class Units:
             self.cls.skipTest('请补全config [PromParams] 下 BRMethodId 的信息')
         base_json = self.param_xe(base_json)
         vipinfo = None
-        promparam_br = get_param_to_dict(self.cls, 'PROMPARAM_BR', self.testcase, REQUEST, 'bonus')[0]
+        promparam_brs = get_param_to_dict(self.cls, 'PROMPARAM_BR', self.testcase, REQUEST, 'bonus')
+        promparam_br = None
+        for pb in promparam_brs:
+            if pb['request'] is not None:
+                promparam_br = pb
         for row in self.testcase:
             if row['VIPINFO'] is not None:
                 vipinfo = to_dict(self.cls, 'VIPINFO', row['VIPINFO'])
@@ -128,7 +133,11 @@ class Units:
         if bl_method_id == '':
             self.cls.skipTest('请补全config [PromParams] 下 BLMethodId 的信息')
         base_json = self.param_xe(base_json)
-        promparam_bl = get_param_to_dict(self.cls, 'PROMPARAM_BL', self.testcase, REQUEST, 'promid', 'itemindex', 'useqty')
+        promparam_bls = get_param_to_dict(self.cls, 'PROMPARAM_BL', self.testcase, REQUEST, 'promid', 'itemindex', 'useqty')
+        promparam_bl = []
+        for pb in promparam_bls:
+            if pb['request'] is not None:
+                promparam_bl.append(pb)
         req_prom_quotas = {'reqPromQuota': []}
         req_prom_quota = {'promId': '', 'promMethodId': '', 'items': []}
         # solve the problem that quota multi items
@@ -199,7 +208,11 @@ class Units:
         _is_checked = bool(is_checked)
         if self.testcase == []:
             self.cls.skipTest('找不到TestCase数据')
-        promparam_dis = get_param_to_dict(self.cls, 'PROMPARAM_DIS', self.testcase, REQUEST, 'promid', 'lessitemindex', 'useqty', 'pkgqty')[0]
+        promparam_diss = get_param_to_dict(self.cls, 'PROMPARAM_DIS', self.testcase, REQUEST, 'promid', 'lessitemindex', 'useqty', 'pkgqty')
+        promparam_dis = None
+        for pd in promparam_diss:
+            if pd['request'] is not None:
+                promparam_dis = pd
         req_disc_one_item_user_select = {'reqDiscOneItemUserSelect': []}
         req_disc_one_item = {'promId': '', 'promMethodId': '', 'selectedPromPackages': []}
         req_disc_one_item['promId'] = promparam_dis['request']['promid']
@@ -228,10 +241,35 @@ class Units:
         base_json.update(req_disc_one_item_user_select)
         return base_json
 
+    def param_kp(self, base_json):
+        """
+        "reqPromKeys": [
+        {
+            "promId": "PEOHQO210200003",
+            "promMethodId": "1",
+            "keyCode": "HQ20210201"
+        }]
+
+        ==========================
+        [TestCase]
+        1.PROMPARAM_KDKP : promId=PEOHQO200900006,promMethodId=1,keyCode=HQ20210201
+        2.PROMPARAM_KDKP : keyCode=HQ20210201
+        """
+        pass
+
+    # vip exists or not exists
+    def param_bc_bx(self, base_json):
+        salestotal_vip = produce_salestotal_vip(self.cls, self.testcase, 0)
+        if salestotal_vip is None:
+            return base_json
+        else:
+            base_json['salesData'].update(salestotal_vip)
+            return base_json
 
 class Assembler:
     def __init__(self, test_cls, testcase, common_params):
         self.unit = Units(test_cls, testcase)
+        common_params = list(set(common_params))
         self.common_params = ['param_{}'.format(param.lower()) for param in common_params]
 
     def assemble(self):
@@ -239,9 +277,19 @@ class Assembler:
         according to different params to find self method to control
         """
         self_json = self.unit.base()
+        if 'param_bc' in self.common_params and 'param_bx' in self.common_params:
+            self.common_params.remove('param_bx')
+            self.common_params.remove('param_bc')
+            self.common_params.append('param_bc_bx')
+        elif 'param_bc' in self.common_params:
+            self.common_params.remove('param_bc')
+        else:
+            self.common_params.remove('param_bx')
         for param in self.common_params:
             func = getattr(self.unit, param)
             self_json = func(self_json)
+        if 'param_bc_bx' in self.common_params:
+            self.common_params.remove('param_bc_bx')
         self_json = json_dumps(self_json, indent=4)
         logger.info('REQUEST:\n {}'.format(self_json))
         return self_json

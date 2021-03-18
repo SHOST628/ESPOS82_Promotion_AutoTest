@@ -47,6 +47,10 @@ class DemoTestCase(unittest.TestCase):
         caseid = ''
         casedesci_count = 0
         remarks_count = 0
+        if prom_param == '':
+            prom_param_ = 'BC,BX'
+        else:
+            prom_param_ = prom_param + ',BC,BX'
         for i,case in enumerate(testcase):
             if case['TESTCASEDESCI'] is not None and case['TESTCASEDESCI'] != '':
                 if casedesci_count == 0:
@@ -88,13 +92,20 @@ class DemoTestCase(unittest.TestCase):
         # _promless_detail['PROMLESSDETAIL'] = promless_str
         tmp = to_dict(cls, 'PROMLESSDETAIL', promless_str)
         if tmp is not None:
-            promids = tmp.keys()
-            prom_param_list = param_extractors(promids, prom_param)
+            promids = list(tmp.keys())
+            prom_param_list = param_extractors(promids, prom_param_)
         else:
             if prom_param_list == []:
                 if 'PROMPARAMETER' in testcase[0]:
-                    promparam_str = testcase[0]['PROMPARAMETER']
-                    prom_param_list = param_extractor(promparam_str, prom_param)
+                    promparam_str = ''
+                    for case in testcase:
+                        if case['PROMPARAMETER'] is None :
+                            pass
+                        elif case['PROMPARAMETER'].strip() == '':
+                            pass
+                        else:
+                            promparam_str += case['PROMPARAMETER']
+                    prom_param_list = param_extractor(promparam_str, prom_param_)
         exclude_param_case(cls, exclude_promparam, prom_param_list)
         # TODO END
         # add description for testcase

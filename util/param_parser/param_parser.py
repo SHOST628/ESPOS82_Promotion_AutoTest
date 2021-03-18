@@ -22,6 +22,7 @@ def param_extractor(prom_param, config_prom_param):
     pattern = re.compile(r'{}'.format(config_prom_param))
     common_prom_params = pattern.findall(prom_param)
     common_prom_params = [param.replace('-', '') for param in common_prom_params]
+    common_prom_params = list(set(common_prom_params))
     return common_prom_params
 
 
@@ -39,7 +40,6 @@ def param_extractors(promids, config_prom_param):
         prom_param_sql = "select xf_parameter0 from xf_promitem where xf_promid = '{}'".format(promid)
         prom_param += oracle.select(prom_param_sql)[0][0]
     prom_param_list = param_extractor(prom_param, config_prom_param)
-    prom_param_list = list(set(prom_param_list))
     return prom_param_list
 
 
@@ -71,8 +71,7 @@ def to_dict(test_cls, key, value):
             for kv in kvs:
                 k, v = kv.split('=')
                 if k.strip() == '' or v.strip() == '':
-                    test_cls._testMethodDoc += "<font color='red' style='font-weight:bold'> TESTCASE 下" \
-                                               "【{}】的值为:{} ,填写格式不正确 </font>".format(key, value)
+                    test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确 </font>".format(key, value)
                     test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
                 # ???
                 contain_num = re.search(r'\d+', k.strip())
@@ -88,16 +87,16 @@ def to_dict(test_cls, key, value):
                         v = [i.strip() for i in v]
                 dic[k] = v
             return dic
-        test_cls._testMethodDoc += "<font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确</font>".\
+        test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确</font>".\
             format(key, value)
         test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
-    test_cls._testMethodDoc += "<font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确 </font>".format(
-        key, value)
+    test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确 </font>".\
+        format(key, value)
     test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
 
 
 # TODO param_xx  格式不正确时，怎么处理？例如， 缺少 ；
-def param_to_dict(test_cls, key, value):
+def param_to_dict(test_cls, key, value, request_response):
     """
     turn str into dict, for example,
     str: promid=10001,vipgradecenter=*;vipbonuscenter=*  --> dict: {'request':{'promid':'10001','vipgradecenter':'*'}, 'response':{'vipbonuscenter':'*'}}
@@ -113,17 +112,20 @@ def param_to_dict(test_cls, key, value):
         return
     elif ';' in value:
         req, res = value.split(';')
-        req = req.strip()
-        res = res.strip()
-        req_dict = to_dict(test_cls, key, req)
-        res_dict = to_dict(test_cls, key, res)
         # if req_dict is not None or res_dict is not None:
         t_dict = {}
-        t_dict['request'] = req_dict
-        t_dict['response'] = res_dict
-        return t_dict
+        if request_response:
+            res = res.strip()
+            res_dict = to_dict(test_cls, key, res)
+            t_dict['response'] = res_dict
+            return t_dict
+        else:
+            req = req.strip()
+            req_dict = to_dict(test_cls, key, req)
+            t_dict['request'] = req_dict
+            return t_dict
     else:
-        test_cls._testMethodDoc += "<font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确 </font>".format(key, value)
+        test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确 </font>".format(key, value)
         test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
 
 
@@ -137,34 +139,35 @@ def get_param_to_dict(test_cls, key, testcase, request_response, *need_params):
     :param need_params: to check whether the data is completed
     :return: if_request = 0, return dict ; if_request = 1, return list including dict
     """
+    Flag = True
     need_param = '|'.join(need_params)
     results = []
     for i, row in enumerate(testcase):
         if row[key] is None:
             if request_response == 0:
-                pass
+                results.append({'request': None})
             else:
-                # TODO 处理所有行 均为空的情况
-                promparam = param_to_dict(test_cls, key, ';')
-                results.append(promparam)
+                results.append({'response': None})
         elif row[key].strip() == '':
             if request_response == 0:
-                pass
+                results.append({'request': None})
             else:
-                promparam = param_to_dict(test_cls, key, ';')
-                results.append(promparam)
+                results.append({'response': None})
         elif len(list(set(re.findall(need_param, row[key], flags=re.IGNORECASE)))) == len(need_params):
-            promparam = param_to_dict(test_cls, key, row[key])
+            promparam = param_to_dict(test_cls, key, row[key], request_response)
+            Flag = False
             if request_response == 0:
                 results.append(promparam)
             else:
                 results.append(promparam)
         else:
-            pass
-
-    if results == []:
-        test_cls._testMethodDoc += "<font color='red' style='font-weight:bold'> 请补充完整 TestCase 中 {} 的数据 </font>".format(key)
-        test_cls.skipTest("请补充完整 TestCase 中 {} 的数据".format(key))
+            test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'>TestCase中{}的数据需要包含:{}</font>"\
+                .format(key, ','.join(need_params))
+            test_cls.skipTest("TestCase 中 {} 的数据需要包含: {}".format(key, ','.join(need_params)))
+    if Flag:
+        test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'>TestCase中{}的数据需要包含:{}</font>" \
+            .format(key, ','.join(need_params))
+        test_cls.skipTest("TestCase 中 {} 的数据需要包含: {}".format(key, ','.join(need_params)))
     return results
 
 

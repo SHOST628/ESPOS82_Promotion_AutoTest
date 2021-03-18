@@ -44,10 +44,12 @@ apply_serail = config.get('reqDiscOneItemUserSelectDefault', 'applySerail')
 is_checked =  config.get('reqDiscOneItemUserSelectDefault', 'isChecked')
 
 # TestCaseParam
-totoal_less_error_range = config.get('TestCaseParam', 'TotoalLessErrorRange')
+# deprecated
+# totoal_less_error_range = config.get('TestCaseParam', 'TotoalLessErrorRange')
 detail_less_error_range = config.get('TestCaseParam', 'DetailLessErrorRange')
 skip_caseids = config.get('TestCaseParam', 'SkipCaseId')
 only_test_caseids = config.get('TestCaseParam', 'OnlyTestCaseId')
+approximate_matching = config.get('TestCaseParam', 'ApproximateMatching')
 
 
 # report path

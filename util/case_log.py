@@ -1,167 +1,161 @@
 from util.param_parser.param_parser import to_dict
-from decimal import Decimal
+from util.param_parser.param_parser import get_param_to_dict
+from util.param_parser.param_parser import RESPONSE
 
 
-def _base_log(test_cls, testcase, response):
+def _base_log(test_cls, testcase, response, log_type):
     """
-    if testcase fail output some log
-    :param testcase:
-    :param response:
-    :return:
-    """
-    # TODO output salesitems log
+        if testcase fail output some log
+        log_type: 0,1
+        log_type = 0 : just show actual promid and expected promid
+        log_type = 1 : show actual and expected promid, promless
+        :param testcase:
+        :param response:
+        :return:
+        """
     res_sales_items = response['resSalesItems']
     b_log = ''
     promless = None
     itemcode = None
-    # just think about a existing promid
+    actual_itemindexs = {}
     for i, case in enumerate(testcase):
         promless = case['PROMLESSDETAIL']
         itemcode = case['ITEMCODE']
-        # b_log += '【PromtionLess】'
-        b_log += '\n[ItemCode: {}]\n'.format(itemcode)
-        # todo modify
-        if res_sales_items == []:
-            if promless is None:
-                b_log += 'PromId:None, 实际结果:不中促销, 期望结果:None\n'
-            else:
-                promless = to_dict(test_cls, 'PROMLESSDETAIL', promless)
-                for k, v in promless.items():
-                    if type(v) is list:
-                        for v_ in v:
-                            b_log += 'PromId:{}, 实际结果:不中促销, 期望结果:{}\n'.format(k, v_)
-                    else:
-                        b_log += 'PromId:{}, 实际结果:不中促销, 期望结果:{}\n'.format(k, v)
-        else:
-            actual_itemindexs = {}
+        if i == 0:
+            b_log += '【PromtionLess】'
+            # 记录response中 列表的index和 itemindex 关系
             for j, sales_items in enumerate(res_sales_items):
-                # 记录列表中index和 itemindex 关系
                 actual_itemindexs[sales_items['itemIndex']] = j
-            promless = to_dict(test_cls, 'PROMLESSDETAIL', promless)
-            expected_promids = []
-            actual_promids = []
-            if i in actual_itemindexs:
-                if promless is None:
-                    expected_promids = None
+        b_log += '\n[ItemCode: {}]\n'.format(itemcode)
+        expected_promids = []
+        actual_promids = []
+        promless = to_dict(test_cls, 'PROMLESSDETAIL', promless)
+        if promless is not None:
+            expected_promids = list(promless.keys())
+            expected_promids.sort()
+            for k, v in promless.items():
+                if type(v) is list:
+                    pass
                 else:
-                    expected_promids = list(promless.keys())
-                    expected_promids.sort()
-                for item_consumes in res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']:
-                    actual_promids.append(item_consumes['promId'])
-                actual_promids.sort()
-                if expected_promids is not None:
-                    # 注意：response有可能会存在，同一个itemcode里面，同一个promid 会被分拆成多个dict展示
-                    if len(expected_promids) <= len(actual_promids):
-                        if list(set(actual_promids)) == expected_promids:
-                            actual_promless_detail = {}
-                            if expected_promids == actual_promids:
-                                for item_consumes in res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']:
-                                    promid = item_consumes['promId']
-                                    actual_promless_detail[promid] = []
-                                    actual_promless_detail[promid].append(item_consumes['lessAmount'])
+                    promless[k] = []
+                    promless[k].append(v)
+        if i in actual_itemindexs:
+            for item_consumes in res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']:
+                actual_promids.append(item_consumes['promId'])
+            actual_promids = list(set(actual_promids))
+            actual_promids.sort()
+            if log_type == 0:
+                if promless is None:
+                    b_log += '期望PromId: None, 实际PromId:{}\n'.format(','.join(actual_promids))
+                else:
+                    b_log += '期望PromId:{}, 实际PromId:{}\n'.format(','.join(expected_promids), ','.join(actual_promids))
+            elif log_type == 1:
+                # todo
+                actual_promless_detail = {}
+                for actual_promid in actual_promids:
+                    actual_promless_detail[actual_promid] = []
+                    for item_consume in res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']:
+                        if actual_promid == item_consume['promId']:
+                            actual_promless_detail[actual_promid].append(str(item_consume['lessAmount']))
+                if promless is None:
+                    for k,v in actual_promless_detail.items():
+                        b_log += 'PromId:{}, 期望结果:None, 实际结果:{}\n'.format(k, ' & '.join(v))
+                else:
+                    if len(list(promless.keys())) >= len(list(actual_promless_detail.keys())):
+                        for k, v in promless.items():
+                            if k in actual_promless_detail:
+                                b_log += 'PromId:{}, 期望结果:{}, 实际结果:{}\n'.format(k, ' & '.join(v), ' & '.join(actual_promless_detail[k]))
                             else:
-                                actual_promids = list(set(actual_promids))
-                                for actual_promid in actual_promids:
-                                    for item_consume in res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']:
-                                        if actual_promid == item_consume['promId']:
-                                            if actual_promid in list(actual_promless_detail.keys()):
-                                                actual_promless_detail[actual_promid].append(item_consume['lessAmount'])
-                                            else:
-                                                actual_promless_detail[actual_promid] = []
-                                                actual_promless_detail[actual_promid].append(item_consume['lessAmount'])
-                            for k, v in promless.items():
-                                if type(v) is list:
-                                    if len(v) == len(actual_promless_detail[k]):
-                                        for h, v_ in enumerate(v):
-                                            b_log += 'PromId:{}, 实际结果:{}, 期望结果:{}\n'.format(k, actual_promless_detail[k][h], v_)
-                                    else:
-                                        if len(v) > len(actual_promless_detail[k]):
-                                            for h, v_ in enumerate(v):
-                                                if h == len(actual_promless_detail[k]) -1:
-                                                    b_log += 'PromId:{}, 实际结果:None, 期望结果:{}\n'. \
-                                                        format(k, v_)
-                                                else:
-                                                    b_log += 'PromId:{}, 实际结果:{}, 期望结果:{}\n'.\
-                                                        format(k, actual_promless_detail[k][h], v_)
-                                        if len(v) < len(actual_promless_detail[k]):
-                                            for h, v_ in enumerate(actual_promless_detail[k]):
-                                                if h == len(v) - 1:
-                                                    b_log += 'PromId:{}, 实际结果:{}, 期望结果:None\n'. \
-                                                        format(k, v_)
-                                                else:
-                                                    b_log += 'PromId:{}, 实际结果:{}, 期望结果:{}\n'. \
-                                                        format(k, v_, v[h])
-                                else:
-                                    if len(actual_promless_detail[k]) > 1:
-                                        for h, v_ in enumerate(actual_promless_detail[k]):
-                                            if h == 0:
-                                                b_log += 'PromId:{}, 实际结果:{}, 期望结果:None\n'. \
-                                                    format(k, v_)
-                                            else:
-                                                b_log += 'PromId:{}, 实际结果:{}, 期望结果:{}\n'. \
-                                                    format(k, v_, v)
-                                    else:
-                                        b_log += 'PromId:{}, 实际结果:{}, 期望结果:{}\n'.\
-                                            format(k, actual_promless_detail[k][0], v)
-                        else:
-                            actual_promids = list(set(actual_promids))
-                            actual_promids.sort()
-                            b_log += '实际PromId:{}, 期望PromId:{}\n'.format(','.join(actual_promids),','.join(expected_promids))
+                                b_log += 'PromId:{}, 期望结果:{}, 实际结果:None\n'.format(k, ' & '.join(v))
                     else:
-                        actual_promids = list(set(actual_promids))
-                        actual_promids.sort()
-                        b_log += '实际PromId:{}, 期望PromId:{}\n'.format(','.join(actual_promids),','.join(expected_promids))
-                else:
-                    actual_promless_detail = {}
-                    actual_promids = list(set(actual_promids))
-                    for actual_promid in actual_promids:
-                        for item_consume in res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']:
-                            if actual_promid == item_consume['promId']:
-                                if actual_promid in list(actual_promless_detail.keys()):
-                                    actual_promless_detail[actual_promid].append(item_consume['lessAmount'])
-                                else:
-                                    actual_promless_detail[actual_promid] = []
-                                    actual_promless_detail[actual_promid].append(item_consume['lessAmount'])
-
-                    for k, v in actual_promless_detail.items():
-                        if type(v) is list:
-                            for l in v:
-                                b_log += 'PromId:{}, 实际结果:{}, 期望结果:None\n'.format(k, l)
-                        else:
-                            b_log += 'PromId:{}, 实际结果:{}, 期望结果:None\n'.format(k, v)
-            else:
+                        for k, v in actual_promless_detail.items():
+                            if k in promless:
+                                b_log += 'PromId:{}, 期望结果:{}, 实际结果:{}\n'.format(k, ' & '.join(promless[k]), ' & '.join(v))
+                            else:
+                                b_log += 'PromId:{}, 期望结果:None, 实际结果:{}\n'.format(k, ' & '.join(v))
+        else:
+            if log_type == 0:
                 if promless is None:
-                    b_log += 'PromId:None, 实际结果:None, 期望结果:None\n'
+                    b_log += '期望结果: 不中促销, 实际结果: 不中促销\n'
+                else:
+                    b_log += '期望PromId:{}, 实际PromId: None\n'.format(','.join(expected_promids))
+            elif log_type == 1:
+                if promless is None:
+                    b_log += '期望结果: 不中促销, 实际结果: 不中促销\n'
                 else:
                     for k, v in promless.items():
-                        if type(v) is list:
-                            for v_ in v:
-                                b_log += 'PromId:{}, 实际结果:None, 期望结果:{}\n'.format(k, v_)
-                        else:
-                            b_log += 'PromId:{}, 实际结果:None, 期望结果:{}\n'.format(k, v)
+                        b_log += 'PromId:{}, 期望结果:{}, 实际结果:不中促销\n'.format(k, ' & '.join(v))
     return b_log
 
 
-def base_log(test_cls, testcase, response):
+def base_log(test_cls, testcase, response, log_type):
     """
     if testcase fail output some log
     :param testcase: list
     :param response: dict
     :return:
     """
-    b_log = _base_log(test_cls, testcase, response)
+    b_log = _base_log(test_cls, testcase, response, log_type)
     return b_log
 
 
 class ParamLog:
-    def param_xe_log(self,testcase, response):
-        b_log = '【Param_XE】\n'
+    def param_xe_log(self,test_cls, testcase, response):
+        param_xe = get_param_to_dict(test_cls, 'PROMPARAM_XE', testcase, RESPONSE, 'bonusGive')
+        res_sales_items = response['resSalesItems']
+        b_log = '\n【Param_XE】\n'
+        actual_itemindexs = {}
+        for j, sales_items in enumerate(res_sales_items):
+            # record the relationship about item index in testcase and itemindex in response
+            actual_itemindexs[sales_items['itemIndex']] = j
+        for i, case in enumerate(testcase):
+            item_code = case['ITEMCODE']
+            b_log += '[ItemCode: {}]\n'.format(item_code)
+            if i in actual_itemindexs:
+                b_log += '期望bonusGive: {}, 实际bonusGive: {}\n'.\
+                    format( param_xe[i]['response']['bonusgive'], res_sales_items[actual_itemindexs[i]]['bonusGive'])
+            else:
+                b_log += '期望bonusGive: {}, 实际bonusGive: None\n'.format(param_xe[i]['response']['bonusgive'])
+        return b_log
 
     def param_bl_log(self):
         pass
 
-    def param_br_log(self):
-        pass
+    def param_br_log(self, test_cls, testcase, response):
+        bonus_redeem = get_param_to_dict(test_cls, 'PROMPARAM_BR', testcase, RESPONSE, 'bonusRedeem')
+        res_sales_items = response['resSalesItems']
+        b_log = '\n【Param_BR】\n'
+        actual_itemindexs = {}
+        for j, sales_items in enumerate(res_sales_items):
+            # record the relationship about item index in testcase and itemindex in response
+            actual_itemindexs[sales_items['itemIndex']] = j
+        for i, case in enumerate(testcase):
+            item_code = case['ITEMCODE']
+            if i == 0:
+                b_log += '[ItemCode: {}]\n'.format(item_code)
+            else:
+                b_log += '\n[ItemCode: {}]\n'.format(item_code)
+            if i in actual_itemindexs:
+                res_salesitem_consumes = res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']
+                actual_bonus_redeem = 0
+                for salesitem_consume in res_salesitem_consumes:
+                    actual_bonus_redeem += salesitem_consume['bonusRedeem']
+                if bonus_redeem[i]['response'] is not None:
+                    b_log += '期望bonusRedeem: {}, 实际bonusRedeem: {}\n'. \
+                        format(bonus_redeem[i]['response']['bonusredeem'], actual_bonus_redeem)
+                else:
+                    b_log += '期望bonusRedeem: None, 实际bonusRedeem: {}\n'. \
+                        format(actual_bonus_redeem)
+            else:
+                if bonus_redeem[i]['response'] is not None:
+                    b_log += '期望bonusRedeem: {}, 实际bonusRedeem: None\n'. \
+                        format(bonus_redeem[i]['response']['bonusredeem'])
+                else:
+                    b_log += '期望bonusRedeem: None, 实际bonusRedeem: None\n'
+        return b_log
 
     def param_dis_log(self):
+        pass
+
+    def param_kp_log(self, test_cls, testcase, reponse):
         pass
