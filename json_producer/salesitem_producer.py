@@ -1,6 +1,9 @@
 from util.oracle import oracle
-from util.mylogger import logger
-from util.readconfig import invt_type, price_mode, disc_mode, disc_value, itemlot_num
+from util.readconfig import invt_type
+from util.readconfig import price_mode
+from util.readconfig import disc_mode
+from util.readconfig import disc_value
+from util.readconfig import itemlot_num
 import re
 
 

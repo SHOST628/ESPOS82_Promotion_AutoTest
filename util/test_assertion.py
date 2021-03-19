@@ -412,11 +412,6 @@ class Checker:
                     else:
                         b_log = base_log(self.cls, testcase, self.response, log_type=0)
                         self.cls.fail(b_log)
-                # if i == len(testcase) - 1:
-                #     if FLAG:
-                #         self.cls._testMethodDoc += error_range_doc
-                #     if APPRO_FLAG:
-                #         self.cls._testMethodDoc += appro_match_doc
         for param in prom_param_list:
             if hasattr(ParamChecker, param):
                 param_checker = getattr(ParamChecker, param)

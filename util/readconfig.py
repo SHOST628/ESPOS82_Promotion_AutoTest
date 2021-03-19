@@ -25,12 +25,16 @@ api_key = config.get('Api', 'ApiKey')
 # JsonModel
 base_json = config.get('JsonModel', 'BaseJson')
 
+#JsonConfig
+request_now = config.get('JsonConfig','RequestNow')
+
 # PromParams
 prom_param = config.get('PromParams', 'PromParam')
 exclude_promparam = config.get('PromParams', 'ExcludePromParam')
 br_method_id = config.get('PromParams', 'BRMethodId')
 bl_method_id = config.get('PromParams', 'BLMethodId')
 dis_method_id = config.get('PromParams', 'DISMethodId')
+kp_method_id = config.get('PromParams', 'KPMethodId')
 
 # PromSalesItemDefault
 invt_type = config.get('PromSalesItemDefault', 'invtType')
@@ -44,8 +48,7 @@ apply_serail = config.get('reqDiscOneItemUserSelectDefault', 'applySerail')
 is_checked =  config.get('reqDiscOneItemUserSelectDefault', 'isChecked')
 
 # TestCaseParam
-# deprecated
-# totoal_less_error_range = config.get('TestCaseParam', 'TotoalLessErrorRange')
+# totoal_less_error_range = config.get('TestCaseParam', 'TotoalLessErrorRange')  # deprecated
 detail_less_error_range = config.get('TestCaseParam', 'DetailLessErrorRange')
 skip_caseids = config.get('TestCaseParam', 'SkipCaseId')
 only_test_caseids = config.get('TestCaseParam', 'OnlyTestCaseId')
