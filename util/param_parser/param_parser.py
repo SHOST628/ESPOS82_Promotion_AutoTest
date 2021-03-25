@@ -100,6 +100,8 @@ def param_to_dict(test_cls, key, value, request_response):
     """
     turn str into dict, for example,
     str: promid=10001,vipgradecenter=*;vipbonuscenter=*  --> dict: {'request':{'promid':'10001','vipgradecenter':'*'}, 'response':{'vipbonuscenter':'*'}}
+    symbol priority:  ; >  #   >  :  > =
+
     :param dict_str:
     :return: the key and value are string  for example, {'request': None, 'reponse': xxx}  {'request':xxx, 'response':{xxx:xxx}}
     """

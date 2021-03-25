@@ -40,10 +40,11 @@ class DemoTestCase(unittest.TestCase):
     def test_demo(cls, testcaseid):
         testcase_sql = "select * from testcase where testcaseid = '{}' order by serialno".format(testcaseid)
         testcase = oracle.dict_fetchall(testcase_sql)
-        testcase_desci = '【CASE DESCRIPTION】:'
-        promparam_desci = '【PROMPARAMETER】:'
-        promid_desci = '【PROMID DESCRIPTION】: '
-        remarks = '【REMARK】:'
+        testcase_desci = '<font style="font-weight:bold">[CASE DESCRIPTION]:' + '&nbsp'*2 + '</font>'
+        promparam_desci = '<font style="font-weight:bold">[PROMPARAMETER]:' + '&nbsp'*2 + '</font>'
+        promid_desci = '<font style="font-weight:bold">[PROMID DESCRIPTION]:' + '&nbsp'*2 + '</font>'
+        remarks = "<font style='font-weight:bold'>[REMARK]:</font>&nbsp&nbsp" \
+                  "<font color='red' style='font-weight:bold'>"
         caseid = ''
         casedesci_count = 0
         remarks_count = 0
@@ -59,6 +60,7 @@ class DemoTestCase(unittest.TestCase):
             if case['REMARKS'] is not None and case['REMARKS'] != '':
                 if remarks_count == 0:
                     remarks += case['REMARKS']
+                remarks_count += 1
                 casedesci_count += 1
             if case['PROMPARAMETER'] is not None and case['PROMPARAMETER'] != '':
                 promparam_desci += case['PROMPARAMETER'] + '；&nbsp&nbsp'
@@ -72,9 +74,8 @@ class DemoTestCase(unittest.TestCase):
                 promid_desci = promid_desci + 'ITEMCODE={}, PROMIDS={}&nbsp&nbsp||&nbsp&nbsp '\
                     .format(case['ITEMCODE'], caseid)
         space = '&nbsp'*41
-        # testcase_desci = """<br>&nbsp&nbsp{}{} ;<br>{}【PROMPARAMETER】: {}""".format(space, testcase_desci, space, promparam_desci)
+        remarks = '{}</font>'.format(remarks)
         testcase_desci = """{}<br>{} ;<br>{}<br>{}""".format(promid_desci, testcase_desci, promparam_desci, remarks)
-        # testcase_desci = """{} ;""".format(testcase_desci)
         cls._testMethodDoc = testcase_desci
         if only_test_caseids != '':
             only_test_case(cls, testcaseid, only_test_caseids, cls._testMethodDoc)

@@ -103,7 +103,7 @@ class Units:
         """
         if br_method_id == '':
             self.cls.skipTest('请补全config [PromParams] 下 BRMethodId 的信息')
-        base_json = self.param_xe(base_json)
+        # base_json = self.param_xe(base_json)
         vipinfo = None
         promparam_brs = get_param_to_dict(self.cls, 'PROMPARAM_BR', self.testcase, REQUEST, 'bonus')
         promparam_br = None
@@ -150,7 +150,7 @@ class Units:
         """
         if bl_method_id == '':
             self.cls.skipTest('请补全config [PromParams] 下 BLMethodId 的信息')
-        base_json = self.param_xe(base_json)
+        # base_json = self.param_xe(base_json)
         promparam_bls = get_param_to_dict(self.cls, 'PROMPARAM_BL', self.testcase, REQUEST, 'promid', 'itemindex', 'useqty')
         promparam_bl = []
         for pb in promparam_bls:
@@ -322,6 +322,18 @@ class Units:
                     pass
             return base_json
 
+    def param_gt(self, base_json):
+        """
+            "reqGiftUserInput": [{
+                "promId": "PEOHQO201100015",
+                "promMethodId": "1"
+            }]
+
+        =====================================
+        [TestCase] PROMPARAM_GT : promId=PEOHQO200900006
+        """
+        pass
+
     # vip exists or not exists
     def param_bc_bx(self, base_json):
         salestotal_vip = produce_salestotal_vip(self.cls, self.testcase, 0)
@@ -330,6 +342,12 @@ class Units:
         else:
             base_json['salesData'].update(salestotal_vip)
             return base_json
+
+    # todo param_bc  extract common promparam -BC
+    def param_bc(self, base_json):
+        salestotal_vip = produce_salestotal_vip(self.cls, self.testcase, 1)
+        base_json['salesData'].update(salestotal_vip)
+        return base_json
 
 class Assembler:
     def __init__(self, test_cls, testcase, common_params):
@@ -347,8 +365,8 @@ class Assembler:
             self.common_params.remove('param_bc')
             self.common_params.append('param_bc_bx')
         elif 'param_bc' in self.common_params:
-            self.common_params.remove('param_bc')
-        else:
+            pass
+        elif 'param_bx' in self.common_params:
             self.common_params.remove('param_bx')
         for param in self.common_params:
             func = getattr(self.unit, param)

@@ -23,8 +23,6 @@ if approximate_matching == '':
     approximate_matching = 0
 else:
     approximate_matching = int(approximate_matching)
-FLAG = False
-APPRO_FLAG = False
 
 
 class ParamChecker:
@@ -70,6 +68,7 @@ class ParamChecker:
                 ]
             }
         ]
+
         【Demo request assertion】
         跟普通case一致
         """
@@ -139,6 +138,7 @@ class ParamChecker:
         ]
         }
         【response】
+        # 不需要对比兑换的积分，只需要对比响应itemcode下的对应的promid的promless
          "resSalesItems": [   {
               "resSalesItemConsumes": [
                 {
@@ -146,38 +146,39 @@ class ParamChecker:
               ]  }
          }]
         """
-        bonus_redeem = get_param_to_dict(test_cls, 'PROMPARAM_BR', testcase, RESPONSE, 'bonusRedeem')
-        res_sales_items = response['resSalesItems']
-        b_log = ''
-        param_br_log = getattr(ParamLog, 'param_br_log')
-        actual_itemindexs = {}
-        for j, sales_items in enumerate(res_sales_items):
-            # record the relationship about item index in testcase and itemindex in response
-            actual_itemindexs[sales_items['itemIndex']] = j
-        for i, br in enumerate(bonus_redeem):
-            if i in actual_itemindexs:
-                res_salesitem_consumes = res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']
-                actual_bonus_redeem = 0
-                for salesitem_consume in res_salesitem_consumes:
-                    actual_bonus_redeem += salesitem_consume['bonusRedeem']
-                if br['response'] is not None:
-                    if float(br['response']['bonusredeem']) == actual_bonus_redeem:
-                        break
-                    else:
-                        b_log += param_br_log(ParamLog, test_cls, testcase, response)
-                        test_cls.fail(b_log)
-                else:
-                    if actual_bonus_redeem != 0:
-                        b_log += param_br_log(ParamLog, test_cls, testcase, response)
-                        test_cls.fail(b_log)
-                    else:
-                        pass
-            else:
-                if br['response'] is None:
-                    pass
-                else:
-                    b_log += param_br_log(ParamLog, test_cls, testcase, response)
-                    test_cls.fail(b_log)
+        # bonus_redeem = get_param_to_dict(test_cls, 'PROMPARAM_BR', testcase, RESPONSE, 'bonusRedeem')
+        # res_sales_items = response['resSalesItems']
+        # b_log = ''
+        # param_br_log = getattr(ParamLog, 'param_br_log')
+        # actual_itemindexs = {}
+        # for j, sales_items in enumerate(res_sales_items):
+        #     # record the relationship about item index in testcase and itemindex in response
+        #     actual_itemindexs[sales_items['itemIndex']] = j
+        # for i, br in enumerate(bonus_redeem):
+        #     if i in actual_itemindexs:
+        #         res_salesitem_consumes = res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']
+        #         actual_bonus_redeem = 0
+        #         for salesitem_consume in res_salesitem_consumes:
+        #             actual_bonus_redeem += salesitem_consume['bonusRedeem']
+        #         if br['response'] is not None:
+        #             if float(br['response']['bonusredeem']) == actual_bonus_redeem:
+        #                 break
+        #             else:
+        #                 b_log += param_br_log(ParamLog, test_cls, testcase, response)
+        #                 test_cls.fail(b_log)
+        #         else:
+        #             if actual_bonus_redeem != 0:
+        #                 b_log += param_br_log(ParamLog, test_cls, testcase, response)
+        #                 test_cls.fail(b_log)
+        #             else:
+        #                 pass
+        #     else:
+        #         if br['response'] is None:
+        #             pass
+        #         else:
+        #             b_log += param_br_log(ParamLog, test_cls, testcase, response)
+        #             test_cls.fail(b_log)
+        pass
 
     def param_xe_check(self, test_cls, testcase, response):
         """
@@ -241,8 +242,10 @@ class Checker:
         self.cls = test_cls
 
     def check(self, caseid, response, prom_param_list):
-        global FLAG
-        global APPRO_FLAG
+        FLAG = False
+        APPRO_FLAG = False
+        # 如果遇到testcase的期望结果和实际结果都是不中促销，则需要跳过param_xx_check
+        NONE_FLAG = True
         # error_range_doc = ''
         error_range_doc = "<br><font color='green' style='font-weight:bold'>实际与期望结果在误差范围内</font>"
         appro_match_doc = "<br><font color='blue' style='font-weight:bold'>注意：期望promid列表不完全匹配实际promid列表中" \
@@ -266,6 +269,7 @@ class Checker:
                 if promless_detail is None or promless_detail == '':
                     pass
                 else:
+                    NONE_FLAG = False
                     prom_detail_dict = to_dict(self.cls, 'PROMLESSDETAIL', promless_detail)
                     for key, value in prom_detail_dict.items():
                         if type(value) is list:
@@ -291,6 +295,7 @@ class Checker:
                     if promless is None:
                         pass
                     else:
+                        NONE_FLAG = False
                         expected_promids = list(promless.keys())
                         expected_promids.sort()
                     for item_consumes in res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']:
@@ -410,14 +415,18 @@ class Checker:
                         pass
                     # todo
                     else:
+                        NONE_FLAG = False
                         b_log = base_log(self.cls, testcase, self.response, log_type=0)
                         self.cls.fail(b_log)
-        for param in prom_param_list:
-            if hasattr(ParamChecker, param):
-                param_checker = getattr(ParamChecker, param)
-                param_checker(ParamChecker, self.cls, testcase, self.response)
-            else:
-                self.cls.skipTest('本程序没有设置该促销参数: {} 的判断条件'.format(param))
+        if NONE_FLAG:
+            pass
+        else:
+            for param in prom_param_list:
+                if hasattr(ParamChecker, param):
+                    param_checker = getattr(ParamChecker, param)
+                    param_checker(ParamChecker, self.cls, testcase, self.response)
+                else:
+                    self.cls.skipTest('本程序没有设置该促销参数: {} 的判断条件'.format(param))
         if FLAG:
             FLAG = False
             self.cls._testMethodDoc += error_range_doc

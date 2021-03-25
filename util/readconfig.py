@@ -35,6 +35,7 @@ br_method_id = config.get('PromParams', 'BRMethodId')
 bl_method_id = config.get('PromParams', 'BLMethodId')
 dis_method_id = config.get('PromParams', 'DISMethodId')
 kp_method_id = config.get('PromParams', 'KPMethodId')
+gt_method_id = config.get('PromParams', 'GTMethodId')
 
 # PromSalesItemDefault
 invt_type = config.get('PromSalesItemDefault', 'invtType')
