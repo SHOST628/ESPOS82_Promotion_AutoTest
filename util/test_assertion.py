@@ -9,6 +9,7 @@ from util.case_log import base_log
 from util.case_log import ParamLog
 from util.common_util import contain_list
 import json
+import operator
 
 
 TOTALCOUNT = 0
@@ -201,11 +202,37 @@ class ParamChecker:
         "vipBonusCenter": "*"
 
         【response】
-        "resSalesItems": [{
-            "bonusGive": 15400
-        }]
+         需要注意: 如果存在多个促销id，对应的促销id的bonusGive
+         "resSalesItemConsumes":[
+            {
+               "bonusGive": 100
+            }
+         ]
+
+         判断逻辑：
+         匹配送积分的所有促销，如果期望结果和实际结果完全匹配，则case pass
+         [{'response':{'PEOHQO201100036':[{'bonusGive':1070},{'bonusGive':1080}]}}]
         """
         param_xe = get_param_to_dict(test_cls, 'PROMPARAM_XE', testcase, RESPONSE, 'bonusGive')
+        # 整合param_xe数据
+        param_xes = []
+        # change format into [{'PEOHQO201100036':[1070,1080], 'PEOHQO201100037':[1070,1080]}, {'PEOHQO201100036':[1070,1080]}]
+        for param in param_xe:
+            param_xe_one = {}
+            promids_detail = param['response']
+            if promids_detail is None:
+                param_xes.append(None)
+            else:
+                for k, v in promids_detail.items():
+                    if type(v) is list:
+                        bonus_gives = []
+                        for i_ in v:
+                            bonus_gives.append(float(i_['bonusgive']))
+                        param_xe_one[k] = bonus_gives
+                    else:
+                        param_xe_one[k] = []
+                        param_xe_one[k].append(float(v['bonusgive']))
+            param_xes.append(param_xe_one)
         res_sales_items = response['resSalesItems']
         param_xe_log = getattr(ParamLog, 'param_xe_log')
         b_log = ''
@@ -215,25 +242,39 @@ class ParamChecker:
             # record the relationship about item index in testcase and itemindex in response
             actual_itemindexs[sales_items['itemIndex']] = j
         for i, case in enumerate(testcase):
-            # for i, sales_item in enumerate(res_sales_items):
             if i in actual_itemindexs:
-                sales_item = res_sales_items[i]
-                if param_xe[i]['response'] is None:
-                    if sales_item['bonusGive'] == 0:
+                # change actual bonusGive format into {'PEOHQO201100036':[1070,1080], 'PEOHQO201100037':[1070,1080]}
+                bonus_give_d = {}
+                res_salesitem_consumes = res_sales_items[actual_itemindexs[i]]['resSalesItemConsumes']
+                for res_salesitem_consume in res_salesitem_consumes:
+                    if res_salesitem_consume['bonusGive'] == 0:
                         pass
                     else:
-                        b_log += param_xe_log(ParamLog, test_cls, testcase, response)
+                        promid = res_salesitem_consume['promId']
+                        if promid in bonus_give_d:
+                            bonus_give_d[promid].append(res_salesitem_consume['bonusGive'])
+                        else:
+                            bonus_give_d[promid] = []
+                            bonus_give_d[promid].append(res_salesitem_consume['bonusGive'])
+                # when expected bonusGive is None, to compare
+                if param_xes[i] is None:
+                    if bonus_give_d == {}:
+                        pass
+                    else:
+                        b_log += param_xe_log(ParamLog, test_cls, testcase, response, param_xes)
                         test_cls.fail(b_log)
-                elif sales_item['bonusGive'] == float(param_xe[i]['response']['bonusgive']):
-                    pass
                 else:
-                    b_log += param_xe_log(ParamLog, test_cls, testcase, response)
-                    test_cls.fail(b_log)
+                    # compare expected bonusGive dict with actual bonusGive dict
+                    if operator.eq(param_xes[i], bonus_give_d):
+                        pass
+                    else:
+                        b_log += param_xe_log(ParamLog, test_cls, testcase, response, param_xes)
+                        test_cls.fail(b_log)
             else:
-                if param_xe[i]['response'] is None:
+                if param_xes[i] is None:
                     pass
                 else:
-                    b_log += param_xe_log(ParamChecker, test_cls, testcase, response)
+                    b_log += param_xe_log(ParamLog, test_cls, testcase, response, param_xes)
                     test_cls.fail(b_log)
 
 
@@ -248,7 +289,7 @@ class Checker:
         NONE_FLAG = True
         # error_range_doc = ''
         error_range_doc = "<br><font color='green' style='font-weight:bold'>实际与期望结果在误差范围内</font>"
-        appro_match_doc = "<br><font color='blue' style='font-weight:bold'>注意：期望promid列表不完全匹配实际promid列表中" \
+        appro_match_doc = "<br><font color='blue' style='font-weight:bold'>注意：期望promid列表不完全匹配实际promid列表" \
                           "<br>实际promid: {} <br>期望promid: {} </font>"
         testdata_promparam_sql = "select * from testcase where testcaseid = '{}' order by serialno".format(caseid)
         testcase = oracle.dict_fetchall(testdata_promparam_sql)

@@ -44,7 +44,7 @@ class DemoTestCase(unittest.TestCase):
         promparam_desci = '<font style="font-weight:bold">[PROMPARAMETER]:' + '&nbsp'*2 + '</font>'
         promid_desci = '<font style="font-weight:bold">[PROMID DESCRIPTION]:' + '&nbsp'*2 + '</font>'
         remarks = "<font style='font-weight:bold'>[REMARK]:</font>&nbsp&nbsp" \
-                  "<font color='red' style='font-weight:bold'>"
+                  "<font color='CC0066' style='font-weight:bold'>"
         caseid = ''
         casedesci_count = 0
         remarks_count = 0

@@ -96,15 +96,21 @@ def to_dict(test_cls, key, value):
 
 
 # TODO param_xx  格式不正确时，怎么处理？例如， 缺少 ；
-def param_to_dict(test_cls, key, value, request_response):
+def _param_to_dict(test_cls, key, value, request_response):
     """
     turn str into dict, for example,
     str: promid=10001,vipgradecenter=*;vipbonuscenter=*  --> dict: {'request':{'promid':'10001','vipgradecenter':'*'}, 'response':{'vipbonuscenter':'*'}}
     symbol priority:  ; >  #   >  :  > =
+    如：
+    1)PROMPARAM_XE 中填写 ;PEOHQO201100036:bonusGive=1070  --> dict: {'response':{'PEOHQO201100036':{'bonusGive':1070}}}
+    2)PROMPARAM_XE 中填写 ;PEOHQO201100036:bonusGive=1070&1080  --> dict: {'response':{'PEOHQO201100036':[{'bonusGive':1070},{'bonusGive':1080}]}}
 
     :param dict_str:
     :return: the key and value are string  for example, {'request': None, 'reponse': xxx}  {'request':xxx, 'response':{xxx:xxx}}
     """
+    test_method_doc = "<br><font color='red' style='font-weight:bold'> TESTCASE 下" \
+                      "【{}】的值为:{} ,填写格式不正确</font>"
+    test_doc = 'TESTCASE 下【{}】的值为:{} ,填写格式不正确'
     # 用于转换TESTCASE中 PROMPARAM_XX 字段的数据
     if value is None:
         logger.debug('TESTCASE 中 【{}】的值为空 '.format(key))
@@ -114,21 +120,71 @@ def param_to_dict(test_cls, key, value, request_response):
         return
     elif ';' in value:
         req, res = value.split(';')
-        # if req_dict is not None or res_dict is not None:
+        # deal with the promble that one item exists multi promid
+        # if '#' in res:
         t_dict = {}
         if request_response:
-            res = res.strip()
-            res_dict = to_dict(test_cls, key, res)
-            t_dict['response'] = res_dict
+            prom_check_dict = {}
+            response_checks = res.split('#')
+            for check in response_checks:
+                if check is None:
+                    pass
+                elif check.strip() == '':
+                    pass
+                else:
+                    if ':' in check:
+                        prom_check = check.split(':')
+                        if prom_check[0] is None or prom_check[0].strip() == '':
+                            test_cls._testMethodDoc += test_method_doc.format(key, value)
+                            test_cls.skipTest(test_doc.format(key, value))
+                        else:
+                            if prom_check[1] is None or prom_check[1].strip() == '':
+                                test_cls._testMethodDoc += test_method_doc.format(key, value)
+                                test_cls.skipTest(test_doc.format(key, value))
+                            else:
+                                # prom_check_dict = {}
+                                prom_check_key = prom_check[0]
+                                prom_check_value = to_dict(test_cls, key, prom_check[1])
+                                if prom_check_value is None:
+                                    test_cls._testMethodDoc += test_method_doc.format(key, value)
+                                    test_cls.skipTest(test_doc.format(key, value))
+                                else:
+                                    prom_check_dict[prom_check_key] = prom_check_value
+                                    t_dict['response'] = prom_check_dict
+                    else:
+                        test_cls._testMethodDoc += test_method_doc.format(key, value)
+                        test_cls.skipTest(test_doc.format(key, value))
             return t_dict
         else:
             req = req.strip()
-            req_dict = to_dict(test_cls, key, req)
-            t_dict['request'] = req_dict
+            if '#' in req:
+                t_dict['request'] = []
+                r_param_list = req.split('#')
+                for param in r_param_list:
+                    if param.strip() == '':
+                        pass
+                    else:
+                        req_dict = to_dict(test_cls, key, param.strip())
+                        t_dict['request'].append(req_dict)
+            else:
+                req_dict = to_dict(test_cls, key, req.strip())
+                t_dict['request'] = req_dict
             return t_dict
+        # else:
+        #     # just normal key value
+        #     if request_response:
+        #         res = res.strip()
+        #         res_dict = to_dict(test_cls, key, res)
+        #         t_dict['response'] = res_dict
+        #         return t_dict
+        #     else:
+        #         req = req.strip()
+        #         req_dict = to_dict(test_cls, key, req)
+        #         t_dict['request'] = req_dict
+        #         return t_dict
     else:
-        test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确 </font>".format(key, value)
-        test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
+        test_cls._testMethodDoc += test_method_doc.format(key, value)
+        test_cls.skipTest(test_doc.format(key, value))
 
 
 def get_param_to_dict(test_cls, key, testcase, request_response, *need_params):
@@ -139,11 +195,15 @@ def get_param_to_dict(test_cls, key, testcase, request_response, *need_params):
     :param testcase:
     :param request_response: 0 : request ,  1 : reponse
     :param need_params: to check whether the data is completed
-    :return: if_request = 0, return dict ; if_request = 1, return list including dict
+    :return: if_request = 0, return list including dict ; if_request = 1, return list including dict
     """
     Flag = True
-    need_param = '|'.join(need_params)
+    # need_params_ = ['\b{}\b'.format(param) for param in need_params]
+    need_params_ = ['{}'.format(param) for param in need_params]
+    need_param = '|'.join(need_params_)
     results = []
+    test_method_doc = "<br><font color='red' style='font-weight:bold'>TestCase中{}的数据需要包含:{}</font>"
+    skip_test_info = "TestCase 中 {} 的数据需要包含: {}"
     for i, row in enumerate(testcase):
         if row[key] is None:
             if request_response == 0:
@@ -155,21 +215,24 @@ def get_param_to_dict(test_cls, key, testcase, request_response, *need_params):
                 results.append({'request': None})
             else:
                 results.append({'response': None})
-        elif len(list(set(re.findall(need_param, row[key], flags=re.IGNORECASE)))) == len(need_params):
-            promparam = param_to_dict(test_cls, key, row[key], request_response)
-            Flag = False
-            if request_response == 0:
-                results.append(promparam)
+        elif len(list(set(re.findall(r'{}'.format(need_param), row[key], flags=re.IGNORECASE)))) == len(need_params):
+            if re.findall(need_param, row[key], flags=re.IGNORECASE):
+                # todo 判断PROMPARAM_XX 的value是否存在需要的促销参数
+                promparam = _param_to_dict(test_cls, key, row[key], request_response)
+                Flag = False
+                if request_response == 0:
+                    results.append(promparam)
+                else:
+                    results.append(promparam)
             else:
-                results.append(promparam)
+                test_cls._testMethodDoc += test_method_doc.format(key, ','.join(need_params))
+                test_cls.skipTest(skip_test_info.format(key, ','.join(need_params)))
         else:
-            test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'>TestCase中{}的数据需要包含:{}</font>"\
-                .format(key, ','.join(need_params))
-            test_cls.skipTest("TestCase 中 {} 的数据需要包含: {}".format(key, ','.join(need_params)))
+            test_cls._testMethodDoc += test_method_doc.format(key, ','.join(need_params))
+            test_cls.skipTest(skip_test_info.format(key, ','.join(need_params)))
     if Flag:
-        test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'>TestCase中{}的数据需要包含:{}</font>" \
-            .format(key, ','.join(need_params))
-        test_cls.skipTest("TestCase 中 {} 的数据需要包含: {}".format(key, ','.join(need_params)))
+        test_cls._testMethodDoc += test_method_doc.format(key, ','.join(need_params))
+        test_cls.skipTest(skip_test_info.format(key, ','.join(need_params)))
     return results
 
 

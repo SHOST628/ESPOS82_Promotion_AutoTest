@@ -9,6 +9,9 @@ from util.readconfig import dis_method_id
 from util.readconfig import apply_serail
 from util.readconfig import is_checked
 from util.readconfig import kp_method_id
+from util.readconfig import gt_method_id
+from util.readconfig import nc_method_id
+from util.readconfig import xc_method_id
 from util.readconfig import base_json as bjson
 from util.param_parser.param_parser import to_dict
 from util.param_parser.param_parser import get_param_to_dict
@@ -275,7 +278,7 @@ class Units:
         """
         if kp_method_id == '':
             self.cls.skipTest('请补全config [PromParams] 下 KPMethodId 的信息')
-        promparam_bls = None
+        promparam_kps = None
         testcase_desci = "<br><font color='red' style='font-weight:bold'>" \
                          "请补全testcase中PROMPARAM_KDKP下的 keycode或 promid和keycode的信息</font>"
         info = '请补全testcase中PROMPARAM_KDKP下的 keycode 或 promid和keycode的信息'
@@ -284,11 +287,11 @@ class Units:
             if case['PROMPARAM_KDKP'] is not None:
                 if len(re.findall(r'\bpromid\b|\bkeycode\b', case['PROMPARAM_KDKP'], re.IGNORECASE)) == 2:
                     Flag = True
-                    promparam_bls = get_param_to_dict(self.cls, 'PROMPARAM_KDKP', self.testcase,
+                    promparam_kps = get_param_to_dict(self.cls, 'PROMPARAM_KDKP', self.testcase,
                                                       REQUEST, 'promid','keycode')
                     break
                 elif len(re.findall(r'\bkeycode\b', case['PROMPARAM_KDKP'], re.IGNORECASE)) == 1:
-                    promparam_bls = get_param_to_dict(self.cls, 'PROMPARAM_KDKP', self.testcase,
+                    promparam_kps = get_param_to_dict(self.cls, 'PROMPARAM_KDKP', self.testcase,
                                                       REQUEST, 'keycode')
                     break
                 else:
@@ -302,7 +305,7 @@ class Units:
         if Flag:
             req_promkeys = {'reqPromKeys': []}
             req_promkey = {'promId': '', 'promMethodId': '', 'keyCode': ''}
-            for pb in promparam_bls:
+            for pb in promparam_kps:
                 if pb['request'] is not None:
                     req_promkey['promId'] = pb['request']['promid']
                     req_promkey['promMethodId'] = pb['request']['prommethodid']
@@ -313,7 +316,7 @@ class Units:
             base_json.update(req_promkeys)
             return base_json
         else:
-            for i, pb in enumerate(promparam_bls):
+            for i, pb in enumerate(promparam_kps):
                 if pb['request'] is not None:
                     keycode = {'keyCode': ''}
                     keycode['keyCode'] = pb['request']['keycode']
@@ -330,9 +333,177 @@ class Units:
             }]
 
         =====================================
-        [TestCase] PROMPARAM_GT : promId=PEOHQO200900006
+        [TestCase] PROMPARAM_GT : promId=PEOHQO201100015
         """
-        pass
+        promid_dict = get_param_to_dict(self.cls, 'PROMPARAM_GT', self.testcase, REQUEST, 'promid')
+        req_gift_user_input_dict = {'reqGiftUserInput':[]}
+        req_gitf_user_inputs = []
+        # to tag PROMPARAM_GT whether it is None
+        PROMPARAM_GT_FLAG = True
+        for promid_d in promid_dict:
+            if promid_d['request'] is None:
+                pass
+            else:
+                PROMPARAM_GT_FLAG = False
+                req_gitf_user_input = {}
+                req_gitf_user_input.update(promid_d['request'])
+                req_gitf_user_input['promMethodId'] = gt_method_id
+                req_gitf_user_inputs.append(req_gitf_user_input)
+        # if no promid is including in PROMPARAM_GT, skip this testcase
+        if PROMPARAM_GT_FLAG:
+            for i, case in enumerate(self.testcase):
+                if case['PROMLESSDETAIL'] is None or case['PROMLESSDETAIL'].strip() == '':
+                    pass
+                else:
+                    self.cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下" \
+                    "【PROMPARAM_GT】缺少promId数据</font>"
+                    self.cls.skipTest('TESTCASE 下【PROMPARAM_GT】缺少promId数据')
+        req_gift_user_input_dict['reqGiftUserInput'] = req_gitf_user_inputs
+        base_json.update(req_gift_user_input_dict)
+        return base_json
+
+    def param_nc(self, base_json):
+        """
+            "reqPromCouponSettle": {
+            "method": 3,
+            "coupons": [{
+                "batchNo": "HQ002",
+                "cpNo": "0CF0B21002040100004239",
+                "qty": 1,
+                "batchDesci": "消费满500可得印花一枚，累计10个印花换礼品"
+            }, {
+                "batchNo": "HQ002",
+                "cpNo": "0CF0B21002230100004375",
+                "qty": 1,
+                "batchDesci": "消费满500可得印花一枚，累计10个印花换礼品"
+            }
+            }]
+        ================================
+        PROMPARAM_NC : batchNo=HQ001,cpNo=0HQOO0001D710010000042,qty=1#batchNo=HQ001,cpNo=0HQOO0001D710010000145,qty=1;
+        "#" 分隔符，如果 batchNo=HQ001,cpNo=0HQOO0001D710010000042,qty=1 有多个这样的组合，需要使用 '#' 分隔符分开，如果只有一个组合
+        则不需要分隔符 #
+        """
+        if nc_method_id == '':
+            self.cls.skipTest('请补全config [PromParams] 下 NCMethodId 的信息')
+        promparam_ncs = None
+        testcase_desci = "<br><font color='red' style='font-weight:bold'>" \
+                         "请补全testcase中PROMPARAM_NC下的 batchNo、cpNo、qty的信息</font>"
+        info = '请补全testcase中PROMPARAM_NC下的 batchNo、cpNo、qty的信息'
+        Flag = False
+        for i, case in enumerate(self.testcase):
+            if case['PROMPARAM_NC'] is not None:
+                if len(re.findall(r'\bbatchno\b|\bcpno\b|\bqty\b', case['PROMPARAM_NC'], re.IGNORECASE)) >= 3:
+                    promparam_ncs = get_param_to_dict(self.cls, 'PROMPARAM_NC', self.testcase,
+                                                      REQUEST, 'batchno','cpno','qty')
+                    break
+                else:
+                    if i == len(self.testcase) - 1:
+                        self.cls._testMethodDoc += testcase_desci
+                        self.cls.skipTest(info)
+            else:
+                if i == len(self.testcase) - 1:
+                    self.cls._testMethodDoc += testcase_desci
+                    self.cls.skipTest(info)
+        for promparam_nc in promparam_ncs:
+            if promparam_nc['request'] is None:
+                pass
+            else:
+                Flag = True
+                req_prom_coupon_settle_dict = {'reqPromCouponSettle':{'method': nc_method_id, 'coupons': None}}
+                coupons = []
+                if type(promparam_nc['request']) is list:
+                    for prom_param in promparam_nc['request']:
+                        coupon = {'batchNo': None, 'cpNo': None, 'qty': None}
+                        coupon['batchNo'] = prom_param['batchno']
+                        coupon['cpNo'] = prom_param['cpno']
+                        coupon['qty'] = prom_param['qty']
+                        coupons.append(coupon)
+                elif type(promparam_nc['request']) is dict:
+                    coupon = {'batchNo': None, 'cpNo': None, 'qty': None}
+                    prom_param = promparam_nc['request']
+                    coupon['batchNo'] = prom_param['batchno']
+                    coupon['cpNo'] = prom_param['cpno']
+                    coupon['qty'] = prom_param['qty']
+                req_prom_coupon_settle_dict['reqPromCouponSettle']['coupons'] = coupons
+                base_json.update(req_prom_coupon_settle_dict)
+                break
+        if Flag:
+            pass
+        else:
+            self.cls.skipTest(info)
+        return base_json
+
+    def param_xc(self, base_json):
+        """
+        "reqPromCouponSettle": {
+            "method": 3,
+            "coupons": [{
+                "batchNo": "HQ002",
+                "cpNo": "0CF0B21002040100004239",
+                "qty": 1,
+                "batchDesci": "消费满500可得印花一枚，累计10个印花换礼品"
+            }, {
+                "batchNo": "HQ002",
+                "cpNo": "0CF0B21002230100004375",
+                "qty": 1,
+                "batchDesci": "消费满500可得印花一枚，累计10个印花换礼品"
+            }
+            }]
+        ================================
+        PROMPARAM_XC : batchNo=HQ001,cpNo=0HQOO0001D710010000042,qty=1#batchNo=HQ001,cpNo=0HQOO0001D710010000145,qty=1;
+        "#" 分隔符，如果 batchNo=HQ001,cpNo=0HQOO0001D710010000042,qty=1 有多个这样的组合，需要使用 '#' 分隔符分开，如果只有一个组合
+        则不需要分隔符 #
+        """
+
+        if xc_method_id == '':
+            self.cls.skipTest('请补全config [PromParams] 下 XCMethodId 的信息')
+        promparam_xcs = None
+        testcase_desci = "<br><font color='red' style='font-weight:bold'>" \
+                         "请补全testcase中PROMPARAM_XC下的 batchNo、cpNo、qty的信息</font>"
+        info = '请补全testcase中PROMPARAM_XC下的 batchNo、cpNo、qty的信息'
+        Flag = False
+        for i, case in enumerate(self.testcase):
+            if case['PROMPARAM_XC'] is not None:
+                if len(re.findall(r'\bbatchno\b|\bcpno\b|\bqty\b', case['PROMPARAM_XC'], re.IGNORECASE)) >= 3:
+                    promparam_xcs = get_param_to_dict(self.cls, 'PROMPARAM_XC', self.testcase,
+                                                      REQUEST, 'batchno', 'cpno', 'qty')
+                    break
+                else:
+                    if i == len(self.testcase) - 1:
+                        self.cls._testMethodDoc += testcase_desci
+                        self.cls.skipTest(info)
+            else:
+                if i == len(self.testcase) - 1:
+                    self.cls._testMethodDoc += testcase_desci
+                    self.cls.skipTest(info)
+        for promparam_xc in promparam_xcs:
+            if promparam_xc['request'] is None:
+                pass
+            else:
+                Flag = True
+                req_prom_coupon_settle_dict = {'reqPromCouponSettle': {'method': xc_method_id, 'coupons': None}}
+                coupons = []
+                if type(promparam_xc['request']) is list:
+                    for prom_param in promparam_xc['request']:
+                        coupon = {'batchNo': None, 'cpNo': None, 'qty': None}
+                        coupon['batchNo'] = prom_param['batchno']
+                        coupon['cpNo'] = prom_param['cpno']
+                        coupon['qty'] = prom_param['qty']
+                        coupons.append(coupon)
+                elif type(promparam_xc['request']) is dict:
+                    coupon = {'batchNo': None, 'cpNo': None, 'qty': None}
+                    prom_param = promparam_xc['request']
+                    coupon['batchNo'] = prom_param['batchno']
+                    coupon['cpNo'] = prom_param['cpno']
+                    coupon['qty'] = prom_param['qty']
+                req_prom_coupon_settle_dict['reqPromCouponSettle']['coupons'] = coupons
+                base_json.update(req_prom_coupon_settle_dict)
+                break
+        if Flag:
+            pass
+        else:
+            self.cls.skipTest(info)
+        return base_json
 
     # vip exists or not exists
     def param_bc_bx(self, base_json):
@@ -343,7 +514,6 @@ class Units:
             base_json['salesData'].update(salestotal_vip)
             return base_json
 
-    # todo param_bc  extract common promparam -BC
     def param_bc(self, base_json):
         salestotal_vip = produce_salestotal_vip(self.cls, self.testcase, 1)
         base_json['salesData'].update(salestotal_vip)

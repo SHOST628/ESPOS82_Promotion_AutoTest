@@ -15,7 +15,7 @@ config.read(config_path, encoding='utf-8-sig')
 database_connection_url = config.get('DataSource', 'DatabaseConnectionUrl')
 database_user = config.get('DataSource', 'DatabaseUser')
 database_password = config.get('DataSource', 'DatabasePassword')
-db_type = config.get('DataSource','Mysql_Oracle_Connection')
+db_type = config.get('DataSource', 'Mysql_Oracle_Connection')
 db_url = database_user + '/' + database_password + '@' + database_connection_url
 
 # api
@@ -29,13 +29,17 @@ base_json = config.get('JsonModel', 'BaseJson')
 request_now = config.get('JsonConfig','RequestNow')
 
 # PromParams
-prom_param = config.get('PromParams', 'PromParam')
+prom_param = 'KD,KP,GT,DIS,XC,XP,XG,NC,BL,BR,XE'
+# prom_param = config.get('PromParams', 'PromParam')
 exclude_promparam = config.get('PromParams', 'ExcludePromParam')
 br_method_id = config.get('PromParams', 'BRMethodId')
 bl_method_id = config.get('PromParams', 'BLMethodId')
 dis_method_id = config.get('PromParams', 'DISMethodId')
 kp_method_id = config.get('PromParams', 'KPMethodId')
 gt_method_id = config.get('PromParams', 'GTMethodId')
+nc_method_id = config.get('PromParams', 'NCMethodId')
+xc_method_id = config.get('PromParams', 'XCMethodId')
+
 
 # PromSalesItemDefault
 invt_type = config.get('PromSalesItemDefault', 'invtType')
@@ -57,15 +61,22 @@ approximate_matching = config.get('TestCaseParam', 'ApproximateMatching')
 
 
 # report path
-html_excel = config.get('Report', 'Html_Excel')
+# html_excel = config.get('Report', 'Html_Excel')
 report_path = config.get('Report', 'Path')
 
 # email config
-if_send = config.get("Mail", "If_Send")
-email_host = config.get("Mail", "Host")
-email_user = config.get("Mail", "User")
-email_psw = config.get("Mail", "Psw")
-Receivers = config.get("Mail", "Receivers")
+# if_send = config.get("Mail", "If_Send")
+# email_host = config.get("Mail", "Host")
+# email_user = config.get("Mail", "User")
+# email_psw = config.get("Mail", "Psw")
+# sender = config.get("Mail", "Sender")
+# receivers = config.get("Mail", "Receivers")
+# carbon_copy = config.get("Mail", "CarbonCopy")
+# subject = config.get("Mail", "Subject")
+# content = config.get("Mail", "Content")
+# attachment_root_path = config.get("Mail", "AttachmentRootPath")
+# attachment = config.get("Mail", "Attachment")
+
 
 # Log
 log_file = config.get('Log', 'LogFile')
