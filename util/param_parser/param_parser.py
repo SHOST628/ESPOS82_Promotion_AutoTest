@@ -119,6 +119,10 @@ def _param_to_dict(test_cls, key, value, request_response):
         logger.debug('TESTCASE 中 【{}】的值为空 '.format(key))
         return
     elif ';' in value:
+        if value.count(';') >1:
+            test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下" \
+                                        "【{}】的值为:{} ,填写格式不正确,不能存在两个或以上的 ';'</font>".format(key, value)
+            test_cls.skipTest("【{}】的值为:{} ,填写格式不正确,不能存在两个或以上的 ';'".format(key, value))
         req, res = value.split(';')
         # deal with the promble that one item exists multi promid
         # if '#' in res:
