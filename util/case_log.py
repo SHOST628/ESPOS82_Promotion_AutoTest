@@ -177,7 +177,7 @@ class ParamLog:
                     if bonus_give_d == {}:
                         b_log += '期望bonusGive: None, 实际bonusGive: None\n'
                     else:
-                        for k, v in bonus_give_d:
+                        for k, v in bonus_give_d.items():
                             if len(v) == 1:
                                 v = v[0]
                             b_log += 'PromId:{}, 期望bonusGive: None, 实际bonusGive: {}\n'. \
@@ -193,9 +193,6 @@ class ParamLog:
                 else:
                     b_log += '期望bonusGive: None, 实际bonusGive: None\n'
         return b_log
-
-    def param_bl_log(self):
-        pass
 
     def param_br_log(self, test_cls, testcase, response):
         # bonus_redeem = get_param_to_dict(test_cls, 'PROMPARAM_BR', testcase, RESPONSE, 'bonusRedeem')
@@ -230,8 +227,79 @@ class ParamLog:
         #             b_log += '期望bonusRedeem: None, 实际bonusRedeem: None\n'
         return ''
 
-    def param_dis_log(self):
-        pass
+    def param_xc_log(self, test_cls, testcase, *ex_ac):
+        """
+        :param test_cls:
+        :param testcase:
+        :param ex_ac: expected assertion dict and actual assertion dict
+        :return:
+        """
+        ex_param_xc, res_relyon_consume = ex_ac
+        common_promid_set = ex_param_xc.keys() & res_relyon_consume.keys()
+        res_promid_other_set = res_relyon_consume.keys() - common_promid_set
+        res_promid_others = list(res_promid_other_set)
+        res_promid_others.sort()
+        b_log = '\n【Param_XC】\n'
+        # 期望结果对比实际结果
+        for k, v in ex_param_xc.items():
+            if k in res_relyon_consume:
+                b_log += 'PromId:{}, 期望结果:[batchNo:{}, qty:{}], 实际结果:[batchNo:{}, qty:{}]\n'. \
+                    format(k, v['batchno'], v['qty'], res_relyon_consume[k]['batchno'], res_relyon_consume[k]['qty'])
+            else:
+                b_log += 'PromId:{}, 期望结果:[batchNo:{}, qty:{}], 实际结果:None\n'. \
+                    format(k, v['batchno'], v['qty'])
+        # 公共部分之外的实际结果
+        for k in res_promid_others:
+            b_log += 'PromId:{}, 期望结果:None, 实际结果:[batchNo:{}, qty:{}]\n'. \
+                format(k, res_relyon_consume[k]['batchno'], res_relyon_consume[k]['qty'])
+        return b_log
 
-    def param_kp_log(self, test_cls, testcase, reponse):
-        pass
+    def param_xg_log(self, test_cls, testcase, *ex_ac):
+        """
+        :param test_cls:
+        :param testcase:
+        :param ex_ac: expected assertion dict and actual assertion dict
+        :return:
+        """
+        ex_param_xg, res_relyon_consume = ex_ac
+        common_promid_set = ex_param_xg.keys()&res_relyon_consume.keys()
+        res_promid_other_set = res_relyon_consume.keys() - common_promid_set
+        res_promid_others = list(res_promid_other_set)
+        res_promid_others.sort()
+        b_log = '\n【Param_XG】\n'
+        # 期望结果对比实际结果
+        for k, v in ex_param_xg.items():
+            if k in res_relyon_consume:
+                b_log += 'PromId:{}, 期望结果:[batchNo:{}, qty:{}], 实际结果:[batchNo:{}, qty:{}]\n'.\
+                    format(k,v['batchno'], v['qty'], res_relyon_consume[k]['batchno'], res_relyon_consume[k]['qty'])
+            else:
+                b_log += 'PromId:{}, 期望结果:[batchNo:{}, qty:{}], 实际结果:None\n'. \
+                    format(k, v['batchno'], v['qty'])
+        # 公共部分之外的实际结果
+        for k in res_promid_others:
+            b_log += 'PromId:{}, 期望结果:None, 实际结果:[batchNo:{}, qty:{}]\n'. \
+                format(k, res_relyon_consume[k]['batchno'], res_relyon_consume[k]['qty'])
+        return b_log
+
+    def param_xp_log(self, test_cls, testcase, *ex_ac):
+        ex_param_xp, res_relyon_consume = ex_ac
+        common_promid_set = ex_param_xp.keys() & res_relyon_consume.keys()
+        res_promid_other_set = res_relyon_consume.keys() - common_promid_set
+        res_promid_others = list(res_promid_other_set)
+        res_promid_others.sort()
+        b_log = '\n【Param_XP】\n'
+        # {'PEOHQO210400007':{'batchs':[{'batchNo':'HQ003','qty':1},{'batchNo':'HQ004','qty':1}],'packCode':'01'}}
+        # 期望结果对比实际结果
+        for k, v in ex_param_xp.items():
+            if k in res_relyon_consume:
+                b_log += '[PromId:{}]\n期望结果: batchs: {}, packCode: {}\n实际结果: batchs: {}, packCode: {}\n'\
+                         .format(k, v['batchs'], v['packcode'], res_relyon_consume[k]['batchs'],
+                                 res_relyon_consume[k]['packcode'])
+            else:
+                b_log += '[PromId:{}]\n期望结果: batchs: {}, packCode: {}\n实际结果: None\n' \
+                         .format(k, v['batchs'], v['pachcode'])
+        # 公共部分之外的实际结果
+        for k in res_promid_others:
+            b_log += '[PromId:{}]\n期望结果: None\n实际结果: batchs: {}, packCode: {}\n' \
+                     .format(k, res_relyon_consume[k]['batchs'], res_relyon_consume[k]['packcode'])
+        return b_log

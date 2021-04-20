@@ -28,6 +28,15 @@ else:
 
 class ParamChecker:
     # TODO 解释每个参数，注释判断逻辑
+    @staticmethod
+    def _check_promdetail(testcase):
+        for i, case in enumerate(testcase):
+            if case['PROMLESSDETAIL'] is not None and case['PROMLESSDETAIL'].strip() != '':
+                return True
+            else:
+                if i == len(testcase) - 1:
+                    return False
+
     def param_kd_check(self, test_cls, testcase, response):
         """
         促销参数 KD
@@ -76,13 +85,133 @@ class ParamChecker:
         pass
 
     def param_xc_check(self, test_cls, testcase, response):
-        pass
+        """
+        【request】
+        不需要额外传输特定的参数
+
+        【response】
+
+        PROMPARAM_XG：;PEOHQO210400008:batchno=0HQ002,qty=1
+        """
+        Flag = ParamChecker._check_promdetail(testcase)
+        if Flag:
+            param_xc = get_param_to_dict(test_cls, 'PROMPARAM_XC', testcase, RESPONSE, 'batchno', 'qty')
+            # change format into {'PEOHQO210400008':{'batchno':'0HQ002', 'qty':1}}
+            param_xc_d = {}
+            res_relyon_consumes = response['resRelyOnConsume']
+            for xc in param_xc:
+                if xc['response'] is not None:
+                    for k, v in xc['response'].items():
+                        for k_, v_ in v.items():
+                            if k_ == 'qty':
+                                xc['response'][k]['qty'] = float(v[k_])
+                    param_xc_d.update(xc['response'])
+            param_xc_log = getattr(ParamLog, 'param_xc_log')
+            b_log = ''
+            # change format into {'PEOHQO210400008':{'batchno':'0HQ002', 'qty':1}}
+            res_relyon_consume_d = {}
+            for consume in res_relyon_consumes:
+                if consume['material'] == 'COUPON_ISSUE':
+                    resource = {}
+                    resource['batchno'] = consume['resource']['batchNo']
+                    resource['qty'] = consume['resource']['qty']
+                    res_relyon_consume_d[consume['promId']] = resource
+            # 直接对比期望和实际结果字典，存在不同的直接fail
+            if operator.eq(param_xc_d, res_relyon_consume_d):
+                pass
+            else:
+                b_log += param_xc_log(ParamLog, test_cls, testcase, param_xc_d, res_relyon_consume_d)
+                test_cls.fail(b_log)
+        else:
+            pass
 
     def param_xp_check(self, test_cls, testcase, response):
-        pass
+        """
+        【request】
+        不需要额外传输特定的参数
+        【response】
+
+        PROMPARAM_XP: ;PEOHQO210400007:batchs={batchNo=HQ003,qty=1#batchNo=HQ004,qty=1},packCode=01
+        或者 PROMPARAM_XP: PEOHQO210400007:batchs={batchNo=HQ003,qty=1#batchNo=HQ004,qty=1},packCode=01#PEOHQO210400008:batchs={batchNo=HQ005,qty=1#batchNo=HQ006,qty=1},packCode=01）
+        """
+        Flag = ParamChecker._check_promdetail(testcase)
+        if Flag:
+            # ;PEOHQO210400007:batchs={batchNo=HQ003,qty=1#batchNo=HQ004,qty=1},packCode=01
+            # {'response': {'PEOHQO210400007':{'batchs':[{'batchNo':'HQ003','qty':1},{'batchNo':'HQ004','qty':1}],'packCode':'01'}}}
+            param_xp = get_param_to_dict(test_cls, 'PROMPARAM_XP', testcase, RESPONSE, 'batchs', 'batchno', 'qty', 'packcode')
+            param_xp_log = getattr(ParamLog, 'param_xp_log')
+            b_log = ''
+            param_xp_dict = {}  # expected param_xp_dict
+            for xp in param_xp:
+                if xp['response'] is not None:
+                    param_xp_dict.update(xp['response'])
+            for k, v in param_xp_dict.items():
+                for i, batch in enumerate(v['batchs']):
+                    param_xp_dict[k]['batchs'][i]['qty'] = float(batch['qty'])
+            res_relyon_consumes = response['resRelyOnConsume']
+            res_relyon_consume_dict = {}  # actual param_xp_dict
+            for res_relyon_consume in res_relyon_consumes:
+                if res_relyon_consume['material'] == 'COUPONPACKAGE_ISSUE':
+                    promid = res_relyon_consume['promId']
+                    pack_code = res_relyon_consume['resource']['packCode']
+                    batchs = []
+                    for batch in res_relyon_consume['resource']['batchs']:
+                        b_dict = {}
+                        b_dict['batchno'] = batch['batchNo']
+                        b_dict['qty'] = batch['qty']
+                        batchs.append(b_dict)
+                    tmp_dict = {}
+                    tmp_dict['batchs'] = batchs
+                    tmp_dict['packcode'] = pack_code
+                    res_relyon_consume_dict[promid] = tmp_dict
+            if operator.eq(param_xp_dict, res_relyon_consume_dict):
+                pass
+            else:
+                b_log += param_xp_log(ParamLog, test_cls, testcase, param_xp_dict, res_relyon_consume_dict)
+                test_cls.fail(b_log)
+        else:
+            pass
 
     def param_xg_check(self, test_cls, testcase, response):
-        pass
+        """
+        【request】
+        不需要额外传输特定的参数
+
+        【response】
+
+        PROMPARAM_XG：;PEOHQO210400008:batchno=0HQ002,qty=1
+        """
+        Flag = ParamChecker._check_promdetail(testcase)
+        if Flag:
+            param_xg = get_param_to_dict(test_cls, 'PROMPARAM_XG', testcase, RESPONSE, 'batchno','qty')
+            # change format into {'PEOHQO210400008':{'batchno':'0HQ002', 'qty':1}}
+            param_xg_d = {}
+            res_relyon_consumes = response['resRelyOnConsume']
+            for xg in param_xg:
+                if xg['response'] is not None:
+                    for k, v in xg['response'].items():
+                        for k_, v_ in v.items():
+                            if k_ == 'qty':
+                                xg['response'][k]['qty'] = float(v[k_])
+                    param_xg_d.update(xg['response'])
+            param_xg_log = getattr(ParamLog, 'param_xg_log')
+            b_log = ''
+            # change format into {'PEOHQO210400008':{'batchno':'0HQ002', 'qty':1}}
+            res_relyon_consume_d = {}
+            for consume in res_relyon_consumes:
+                if consume['material'] == 'GIFTCERT_ISSUE':
+                    resource = {}
+                    resource['batchno'] = consume['resource']['batchNo']
+                    resource['qty'] = consume['resource']['qty']
+                    res_relyon_consume_d[consume['promId']] = resource
+            # 直接对比期望和实际结果字典，存在不同的直接fail
+            if operator.eq(param_xg_d, res_relyon_consume_d):
+                pass
+            else:
+                b_log += param_xg_log(ParamLog, test_cls, testcase, param_xg_d, res_relyon_consume_d)
+                test_cls.fail(b_log)
+        else:
+            pass
 
     def param_nc_check(self, test_cls, testcase, response):
         pass
@@ -217,6 +346,7 @@ class ParamChecker:
         # 整合param_xe数据
         param_xes = []
         # change format into [{'PEOHQO201100036':[1070,1080], 'PEOHQO201100037':[1070,1080]}, {'PEOHQO201100036':[1070,1080]}]
+        # param_xes includes all item information
         for param in param_xe:
             param_xe_one = {}
             promids_detail = param['response']

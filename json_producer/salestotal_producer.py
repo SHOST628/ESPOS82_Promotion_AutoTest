@@ -1,4 +1,5 @@
 from util.param_parser.param_parser import to_dict
+from util.param_format_log import param_model
 
 
 def _get_vipinfo(test_cls, testcase, if_get):
@@ -23,10 +24,12 @@ def _get_vipinfo(test_cls, testcase, if_get):
             if row['VIPINFO'] is None:
                 if i == len(testcase) - 1:
                     test_cls._testMethodDoc = testcase_desci
+                    test_cls._testMethodDoc += param_model('VIPINFO')
                     test_cls.skipTest(info)
             elif row['VIPINFO'].strip() == '':
                 if i == len(testcase) - 1:
                     test_cls._testMethodDoc = testcase_desci
+                    test_cls._testMethodDoc += param_model('VIPINFO')
                     test_cls.skipTest(info)
             # check TestCase 中 VIPINFO 是否缺漏信息
             elif 'customercode' in row['VIPINFO'].lower() and 'vipgradecenter' in row[
@@ -35,6 +38,7 @@ def _get_vipinfo(test_cls, testcase, if_get):
             else:
                 if i == len(testcase) - 1:
                     test_cls._testMethodDoc = testcase_desci
+                    test_cls._testMethodDoc += param_model('VIPINFO')
                     test_cls.skipTest(info1)
     elif if_get == 0:
         info1 = '请查看TestCase 中的VIPINFO 的 customerCode, vipGradeCenter, vipBonusCenter 的相关信息是否补全，' \
@@ -55,6 +59,7 @@ def _get_vipinfo(test_cls, testcase, if_get):
             else:
                 if i == len(testcase) - 1:
                     test_cls._testMethodDoc = testcase_desci
+                    test_cls._testMethodDoc += param_model('VIPINFO')
                     test_cls.skipTest(info1)
         return
     else:

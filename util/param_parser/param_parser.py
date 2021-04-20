@@ -1,5 +1,6 @@
 from util.mylogger import logger
 from util.oracle import oracle
+from util.param_format_log import param_model
 import re
 
 
@@ -72,8 +73,8 @@ def to_dict(test_cls, key, value):
                 k, v = kv.split('=')
                 if k.strip() == '' or v.strip() == '':
                     test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确 </font>".format(key, value)
+                    test_cls._testMethodDoc += param_model(key)
                     test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
-                # ???
                 contain_num = re.search(r'\d+', k.strip())
                 if contain_num is None:
                     k = k.lower().strip()
@@ -89,9 +90,11 @@ def to_dict(test_cls, key, value):
             return dic
         test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确</font>".\
             format(key, value)
+        test_cls._testMethodDoc += param_model(key)
         test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
     test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下【{}】的值为:{} ,填写格式不正确 </font>".\
         format(key, value)
+    test_cls._testMethodDoc += param_model(key)
     test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
 
 
@@ -100,7 +103,7 @@ def _param_to_dict(test_cls, key, value, request_response):
     """
     turn str into dict, for example,
     str: promid=10001,vipgradecenter=*;vipbonuscenter=*  --> dict: {'request':{'promid':'10001','vipgradecenter':'*'}, 'response':{'vipbonuscenter':'*'}}
-    symbol priority:  ; >  #   >  :  > =
+    symbol priority:  ; >  #   >  : > , > =
     如：
     1)PROMPARAM_XE 中填写 ;PEOHQO201100036:bonusGive=1070  --> dict: {'response':{'PEOHQO201100036':{'bonusGive':1070}}}
     2)PROMPARAM_XE 中填写 ;PEOHQO201100036:bonusGive=1070&1080  --> dict: {'response':{'PEOHQO201100036':[{'bonusGive':1070},{'bonusGive':1080}]}}
@@ -122,14 +125,27 @@ def _param_to_dict(test_cls, key, value, request_response):
         if value.count(';') >1:
             test_cls._testMethodDoc += "<br><font color='red' style='font-weight:bold'> TESTCASE 下" \
                                         "【{}】的值为:{} ,填写格式不正确,不能存在两个或以上的 ';'</font>".format(key, value)
+            test_cls._testMethodDoc += param_model(key)
             test_cls.skipTest("【{}】的值为:{} ,填写格式不正确,不能存在两个或以上的 ';'".format(key, value))
         req, res = value.split(';')
         # deal with the promble that one item exists multi promid
-        # if '#' in res:
         t_dict = {}
         if request_response:
+            res = res.strip()
             prom_check_dict = {}
-            response_checks = res.split('#')
+            # 处理 -XP case, 临时保存batchs的数据
+            rep_tmp = None
+            pattern = re.compile(r'\{.*?\}')
+            rep_tmp = pattern.findall(res)
+            res_replace = None
+            if rep_tmp != []:
+                sub_pattern = '|'.join(rep_tmp)
+                # ;PEOHQO210400007:batchs={batchNo=HQ003,qty=1#batchNo=HQ004,qty=1},packCode=01 取代后
+                # ;PEOHQO210400007:batchs=batchs,packCode=01
+                res_replace = re.sub(r'{}'.format(sub_pattern), 'batchs', res)
+            else:
+                res_replace = res
+            response_checks = res_replace.split('#')
             for check in response_checks:
                 if check is None:
                     pass
@@ -140,10 +156,12 @@ def _param_to_dict(test_cls, key, value, request_response):
                         prom_check = check.split(':')
                         if prom_check[0] is None or prom_check[0].strip() == '':
                             test_cls._testMethodDoc += test_method_doc.format(key, value)
+                            test_cls._testMethodDoc += param_model(key)
                             test_cls.skipTest(test_doc.format(key, value))
                         else:
                             if prom_check[1] is None or prom_check[1].strip() == '':
                                 test_cls._testMethodDoc += test_method_doc.format(key, value)
+                                test_cls._testMethodDoc += param_model(key)
                                 test_cls.skipTest(test_doc.format(key, value))
                             else:
                                 # prom_check_dict = {}
@@ -151,14 +169,37 @@ def _param_to_dict(test_cls, key, value, request_response):
                                 prom_check_value = to_dict(test_cls, key, prom_check[1])
                                 if prom_check_value is None:
                                     test_cls._testMethodDoc += test_method_doc.format(key, value)
+                                    test_cls._testMethodDoc += param_model(key)
                                     test_cls.skipTest(test_doc.format(key, value))
                                 else:
                                     prom_check_dict[prom_check_key] = prom_check_value
                                     t_dict['response'] = prom_check_dict
                     else:
                         test_cls._testMethodDoc += test_method_doc.format(key, value)
+                        test_cls._testMethodDoc += param_model(key)
                         test_cls.skipTest(test_doc.format(key, value))
-            return t_dict
+            if rep_tmp != []:
+                # ;PEOHQO210400007:batchs={batchNo=HQ003,qty=1#batchNo=HQ004,qty=1},packCode=01
+                # {'response': {'PEOHQO210400007':{'batchs':[{'batchNo':'HQ003','qty':1},{'batchNo':'HQ004','qty':1}],'packCode':'01'}}}
+                i = 0
+                res_assertion = t_dict['response']
+                for k, v in res_assertion.items():
+                    batchs = []
+                    tmp_ = rep_tmp[i].lstrip('{')
+                    tmp_ = tmp_.rstrip('}')
+                    batch = tmp_.split('#')
+                    for b in batch:
+                        if b.strip() == '':
+                            pass
+                        else:
+                            batch_dict = to_dict(test_cls, key, b.strip())
+                            batchs.append(batch_dict)
+                    res_assertion[k]['batchs'] = batchs
+                    i += 1
+                t_dict['response'] = res_assertion
+                return t_dict
+            else:
+                return t_dict
         else:
             req = req.strip()
             if '#' in req:
@@ -174,20 +215,9 @@ def _param_to_dict(test_cls, key, value, request_response):
                 req_dict = to_dict(test_cls, key, req.strip())
                 t_dict['request'] = req_dict
             return t_dict
-        # else:
-        #     # just normal key value
-        #     if request_response:
-        #         res = res.strip()
-        #         res_dict = to_dict(test_cls, key, res)
-        #         t_dict['response'] = res_dict
-        #         return t_dict
-        #     else:
-        #         req = req.strip()
-        #         req_dict = to_dict(test_cls, key, req)
-        #         t_dict['request'] = req_dict
-        #         return t_dict
     else:
         test_cls._testMethodDoc += test_method_doc.format(key, value)
+        test_cls._testMethodDoc += param_model(key)
         test_cls.skipTest(test_doc.format(key, value))
 
 
@@ -230,12 +260,15 @@ def get_param_to_dict(test_cls, key, testcase, request_response, *need_params):
                     results.append(promparam)
             else:
                 test_cls._testMethodDoc += test_method_doc.format(key, ','.join(need_params))
+                test_cls._testMethodDoc += param_model(key)
                 test_cls.skipTest(skip_test_info.format(key, ','.join(need_params)))
         else:
             test_cls._testMethodDoc += test_method_doc.format(key, ','.join(need_params))
+            test_cls._testMethodDoc += param_model(key)
             test_cls.skipTest(skip_test_info.format(key, ','.join(need_params)))
     if Flag:
         test_cls._testMethodDoc += test_method_doc.format(key, ','.join(need_params))
+        test_cls._testMethodDoc += param_model(key)
         test_cls.skipTest(skip_test_info.format(key, ','.join(need_params)))
     return results
 

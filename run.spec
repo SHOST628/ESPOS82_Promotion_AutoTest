@@ -22,11 +22,12 @@ a = Analysis(['./run.py',
               './util/readconfig.py',
               './util/wr_excel.py',
               './util/case_log.py',
-              './util/common_util.py'
+              './util/common_util.py',
+              './util/param_format_log.py'
              ],
              pathex=['E:/PycharmProjects/ESPOS82_Promotion_AutoTest'],
              binaries=[],
-             datas=[('./config', 'config'),
+             datas=[('./config/demo_config.ini', 'config'),
                     ('./data', 'data'),
                     ('./ico', 'ico'),
                     ('./json_model', 'json_model')
