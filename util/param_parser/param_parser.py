@@ -98,7 +98,6 @@ def to_dict(test_cls, key, value):
     test_cls.skipTest('TESTCASE 下【{}】的值为:{} ,填写格式不正确'.format(key, value))
 
 
-# TODO param_xx  格式不正确时，怎么处理？例如， 缺少 ；
 def _param_to_dict(test_cls, key, value, request_response):
     """
     turn str into dict, for example,
@@ -236,7 +235,7 @@ def get_param_to_dict(test_cls, key, testcase, request_response, *need_params):
     need_params_ = ['{}'.format(param) for param in need_params]
     need_param = '|'.join(need_params_)
     results = []
-    test_method_doc = "<br><font color='red' style='font-weight:bold'>TestCase中{}的数据需要包含:{}</font>"
+    test_method_doc = "<br><font color='red' style='font-weight:bold'>TestCase中【{}】的数据需要包含:{}</font>"
     skip_test_info = "TestCase 中 {} 的数据需要包含: {}"
     for i, row in enumerate(testcase):
         if row[key] is None:

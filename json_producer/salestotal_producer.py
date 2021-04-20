@@ -15,7 +15,7 @@ def _get_vipinfo(test_cls, testcase, if_get):
     if testcase == []:
         test_cls.skipTest('找不到TestCase数据')
     if if_get == 1:
-        info = 'TestCase 中的VIPINFO 缺少 customerCode, vipGradeCenter, vipBonusCenter 的相关信息'
+        info = 'TestCase 中的【VIPINFO】 缺少 customerCode, vipGradeCenter, vipBonusCenter 的相关信息'
         info1 = '请查看TestCase 中的VIPINFO 的 customerCode, vipGradeCenter, vipBonusCenter 的相关信息是否补全，' \
                 '或者VIPINFO 的键值是否为：customerCode, vipGradeCenter, vipBonusCenter'
         testcase_desci = test_cls._testMethodDoc + \
@@ -41,8 +41,8 @@ def _get_vipinfo(test_cls, testcase, if_get):
                     test_cls._testMethodDoc += param_model('VIPINFO')
                     test_cls.skipTest(info1)
     elif if_get == 0:
-        info1 = '请查看TestCase 中的VIPINFO 的 customerCode, vipGradeCenter, vipBonusCenter 的相关信息是否补全，' \
-                '或者VIPINFO 的键值是否为：customerCode, vipGradeCenter, vipBonusCenter'
+        info1 = '请查看TestCase 中的【VIPINFO】 的 customerCode, vipGradeCenter, vipBonusCenter 的相关信息是否补全，' \
+                '或者【VIPINFO】 的键值是否为：customerCode, vipGradeCenter, vipBonusCenter'
         testcase_desci = test_cls._testMethodDoc + \
                          "<br><font color='red' style='font-weight:bold'>【{}】</font>".format(info1)
         for i, row in enumerate(testcase):

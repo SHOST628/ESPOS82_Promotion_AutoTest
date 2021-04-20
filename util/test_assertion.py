@@ -27,7 +27,6 @@ else:
 
 
 class ParamChecker:
-    # TODO 解释每个参数，注释判断逻辑
     @staticmethod
     def _check_promdetail(testcase):
         for i, case in enumerate(testcase):

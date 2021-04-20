@@ -11,7 +11,6 @@ from util.readconfig import is_checked
 from util.readconfig import kp_method_id
 from util.readconfig import gt_method_id
 from util.readconfig import nc_method_id
-from util.readconfig import xc_method_id
 from util.readconfig import base_json as bjson
 from util.param_parser.param_parser import to_dict
 from util.param_parser.param_parser import get_param_to_dict
